@@ -56,7 +56,7 @@ Contributions are welcome! If you have ideas for improvement or new features, fe
 
 ## 📬 Contact
 
-Developer: [@axelabs](https://github.com/axelabs)  
+Developer: [@axelabs](https://github.com/GigantiX)  
 Email: shavarell.ganendra@binus.ac.id
 
 ---
