@@ -1,0 +1,91 @@
+{
+  "project_info": {
+    "project_number": "96784781082",
+    "firebase_url": "https://project-database-63eea-default-rtdb.asia-southeast1.firebasedatabase.app",
+    "project_id": "project-database-63eea",
+    "storage_bucket": "project-database-63eea.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:96784781082:android:c400864615d3f2340a66a3",
+        "android_client_info": {
+          "package_name": "com.axelabs.divi_apps"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "96784781082-ec1hleadf09aga3dskuitld8ikfejctm.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.axelabs.divi_apps",
+            "certificate_hash": "4239aa9730b7d60788ec2eb46e1f2d4669efb18e"
+          }
+        },
+        {
+          "client_id": "96784781082-sk6hrd9pq1pukqb9j84r025c15tss53o.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCq18gQkpFPiAMcgYL8uiQ03ADZZLd67nk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "96784781082-166cspvre7ev77inro1v4bug33f69ng6.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "96784781082-j90t6hc2nvdla8g5g2ranrivnm5ma4k2.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.byaxel.approle"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:96784781082:android:495ff678087780ba0a66a3",
+        "android_client_info": {
+          "package_name": "com.example.temulapak_app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "96784781082-sk6hrd9pq1pukqb9j84r025c15tss53o.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCq18gQkpFPiAMcgYL8uiQ03ADZZLd67nk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "96784781082-166cspvre7ev77inro1v4bug33f69ng6.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "96784781082-j90t6hc2nvdla8g5g2ranrivnm5ma4k2.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.byaxel.approle"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
