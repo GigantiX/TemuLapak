@@ -9,8 +9,8 @@ import 'package:temulapak_app/utils/custom_dialog.dart';
 import 'package:temulapak_app/utils/loading/loading.dart';
 import 'package:temulapak_app/utils/logger.dart';
 import 'package:temulapak_app/utils/network_checker.dart';
-import 'package:temulapak_app/view/home_page/home_page.dart';
 import 'package:temulapak_app/view/login_page/login_viewmodel.dart';
+import 'package:temulapak_app/view/navigation_page/navigation_page.dart';
 
 class LoginPage extends ConsumerWidget {
   const LoginPage({super.key});
@@ -24,6 +24,7 @@ class LoginPage extends ConsumerWidget {
 
         case LoginState(error: String error?):
           Loading.hide();
+          Logger.log("Error: $error");
           CustomAlertDialog(
               title: "Error Login",
               content: error,
@@ -37,7 +38,7 @@ class LoginPage extends ConsumerWidget {
           Loading.hide();
           Navigator.pushAndRemoveUntil(
               context,
-              MaterialPageRoute(builder: (context) => HomePage()),
+              MaterialPageRoute(builder: (context) => NavigationPage()),
               (route) => false);
 
         default:
@@ -55,42 +56,65 @@ class LoginPage extends ConsumerWidget {
             Padding(
               padding: const EdgeInsets.all(25),
               child: Center(
-                child: Text(
-                  "TemuLapak",
-                  style: GoogleFonts.inter(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 24,
-                  ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Image(
+                        image: const AssetImage(
+                          "lib/assets/icons/logoappTemuLapak.png",
+                        ),
+                        width: 28,
+                        height: 28),
+                    const SizedBox(width: 5),
+                    Text(
+                      "TemuLapak",
+                      style: GoogleFonts.inter(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 20,
+                          color: MyColor.orange),
+                    ),
+                  ],
                 ),
               ),
             ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(0, 10, 0, 20),
+              padding: const EdgeInsets.fromLTRB(0, 70, 0, 50),
               child: SvgPicture.asset(
-                'lib/assets/images/login_image.svg',
+                'lib/assets/images/temulapak_login_draw.svg',
               ),
             ),
-            Expanded(child: SizedBox()),
             Center(
                 child: Padding(
               padding: const EdgeInsets.all(15),
               child: Column(
                 children: [
-                  Text(
-                    "Welcome",
-                    style: GoogleFonts.inter(
-                        fontWeight: FontWeight.w600, fontSize: 32),
+                  SizedBox(
+                    width: 180,
+                    child: Text(
+                      "Jelajahi, Temukan Dan Nikmati Penjual Terdekat!",
+                      style: GoogleFonts.inter(
+                          fontWeight: FontWeight.w600, fontSize: 20),
+                      textAlign: TextAlign.center,
+                    ),
                   ),
-                  Text(
-                    "Please sign in or sign up to continue",
-                    style: GoogleFonts.inter(
-                        fontWeight: FontWeight.w300,
-                        fontSize: 14,
-                        color: MyColor.blackPlain),
+                  SizedBox(
+                    height: 10,
+                  ),
+                  SizedBox(
+                    width: 250,
+                    child: Text(
+                      "Live Tracking mempermudah anda menemukan pedagang favoritmu.",
+                      style: GoogleFonts.inter(
+                          fontWeight: FontWeight.w400,
+                          fontSize: 14,
+                          color: MyColor.blackPlain),
+                      textAlign: TextAlign.center,
+                    ),
                   ),
                 ],
               ),
             )),
+            Expanded(child: SizedBox()),
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 15, 20, 15),
               child: SizedBox(
@@ -101,13 +125,13 @@ class LoginPage extends ConsumerWidget {
                       Logger.log("Login Pressed");
                       NetworkChecker.instance.execute(context, () async {
                         await ref
-                          .read(loginViewModelProvider.notifier)
-                          .googleSignIn();
+                            .read(loginViewModelProvider.notifier)
+                            .googleSignIn();
                       });
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.white,
-                      side: const BorderSide(color: MyColor.darkBlue, width: 2),
+                      side: const BorderSide(color: MyColor.orange, width: 2),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(10),
                       ),
@@ -121,7 +145,7 @@ class LoginPage extends ConsumerWidget {
                           height: 22,
                         ),
                         SizedBox(width: 10),
-                        Text("Sign in with Google",
+                        Text("Masuk dengan Google",
                             style: GoogleFonts.inter(
                                 fontWeight: FontWeight.w500,
                                 fontSize: 16,

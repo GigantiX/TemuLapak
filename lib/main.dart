@@ -3,9 +3,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:temulapak_app/data/local/hive_service.dart';
+import 'package:temulapak_app/view/chat_page/chat_page.dart';
+import 'package:temulapak_app/view/favorite_page/favorite_page.dart';
 import 'package:temulapak_app/view/home_page/home_page.dart';
 import 'package:temulapak_app/view/login_page/login_page.dart';
 import 'package:temulapak_app/view/login_page/login_viewmodel.dart';
+import 'package:temulapak_app/view/navigation_page/navigation_page.dart';
+import 'package:temulapak_app/view/profile_page/profile_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -35,10 +39,14 @@ class MyApp extends ConsumerWidget {
         primarySwatch: Colors.blue,
         textTheme: GoogleFonts.interTextTheme()
       ),
-      home: loginState.user != null ? const HomePage() : const LoginPage(),
+      home: loginState.user != null ? const NavigationPage() : const LoginPage(),
       routes: {
+        '/navigation': (context) => NavigationPage(),
         '/login': (context) => const LoginPage(),
         '/home': (context) => const HomePage(),
+        '/chat': (context) => const ChatPage(),
+        '/favorite': (context) => const FavoritePage(),
+        '/profile': (context) => const ProfilePage(),
       },
     );
   }
