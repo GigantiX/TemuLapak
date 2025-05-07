@@ -1,4 +1,3 @@
-
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -15,71 +14,64 @@ class HomePage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final loginVM = ref.watch(loginViewModelProvider.notifier);
-
     return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          'Hi Axel!',
-          style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700),
-        ),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(0, 0, 16, 0),
-            child: GestureDetector(
-              onTap: () {
-                showDialog(
-                    context: context,
-                    builder: (context) {
-                      return CustomAlertDialog(
-                          title: "Logout",
-                          content: "Do you really want to logout?",
-                          confirmText: "Yes",
-                          cancelText: "No",
-                          icon: Icons.logout,
-                          iconColor: Colors.black,
-                          dialogColor: MyColor.red,
-                          onConfirm: () async {
-                            NetworkChecker.instance.execute(context, () async {
-                              await loginVM.signOut();
-                              if (context.mounted) {
-                                Navigator.pushAndRemoveUntil(
-                                    context,
-                                    MaterialPageRoute(
-                                        builder: (context) => LoginPage()),
-                                    (route) => false);
-                              }
-                            });
-                          },
-                          onCancel: () {
-                            Navigator.pop(context);
-                          });
-                    });
-              },
-              child: CircleAvatar(
-                radius: 20,
-                backgroundImage: NetworkImage('https://picsum.photos/200/300'),
+      body: SafeArea(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            homepageAppBar(),
+            homepageCarousel(ref),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Text(
+                "Upcoming Events",
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                textAlign: TextAlign.center,
               ),
             ),
-          )
-        ],
-      ),
-      body: Column(
-        mainAxisAlignment: MainAxisAlignment.start,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          homepageCarousel(ref),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Text(
-              "Upcoming Events",
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
+}
+
+Widget homepageAppBar() {
+  return Padding(
+    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+    child: Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        CircleAvatar(
+          radius: 20,
+          backgroundImage: NetworkImage('https://picsum.photos/200/300'),
+        ),
+        SizedBox(width: 10),
+        Expanded(
+            child: Column(
+          mainAxisAlignment: MainAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text("Lokasi saya"),
+            Row(children: [
+            Icon(Icons.location_on, color: MyColor.orange, size: 20,),
+              Text(
+              'Jakarta, Indonesia',
+              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+            )
+            ],),
+          ],
+        )),
+        IconButton(
+          onPressed: () {},
+          icon: const Icon(Icons.notifications_none),
+          color: MyColor.blackPlain,
+          iconSize: 33,
+        ),
+      ],
+    ),
+  );
 }
 
 Widget homepageCarousel(WidgetRef ref) {
