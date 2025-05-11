@@ -50,7 +50,7 @@ class CustomAlertDialog extends StatelessWidget {
           const SizedBox(height: 10),
           Text(
             content,
-            style: const TextStyle(fontSize: 16),
+            style: const TextStyle(fontSize: 14),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 20),
@@ -70,7 +70,7 @@ class CustomAlertDialog extends StatelessWidget {
                     backgroundColor: iconColor,
                     foregroundColor: Colors.white,
                   ),
-                  child: Text(confirmText, style: TextStyle(fontSize: 18)),
+                  child: Text(confirmText, style: TextStyle(fontSize: 18, color: Colors.black)),
                 ),
               ]
               ]

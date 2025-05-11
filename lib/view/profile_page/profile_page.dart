@@ -12,7 +12,7 @@ class ProfilePage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final loginVM = ref.watch(loginViewModelProvider.notifier);
-    
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Profile'),
@@ -22,8 +22,9 @@ class ProfilePage extends ConsumerWidget {
           Center(
             child: const Text('Profile Page'),
           ),
-          ElevatedButton(onPressed: (){
-            showDialog(
+          ElevatedButton(
+              onPressed: () {
+                showDialog(
                     context: context,
                     builder: (context) {
                       return CustomAlertDialog(
@@ -32,25 +33,35 @@ class ProfilePage extends ConsumerWidget {
                           confirmText: "Yes",
                           cancelText: "No",
                           icon: Icons.logout,
-                          iconColor: Colors.black,
+                          iconColor: Colors.white,
                           dialogColor: MyColor.red,
                           onConfirm: () async {
-                            NetworkChecker.instance.execute(context, () async {
-                              await loginVM.signOut();
-                              if (context.mounted) {
-                                Navigator.pushAndRemoveUntil(
-                                    context,
-                                    MaterialPageRoute(
-                                        builder: (context) => LoginPage()),
-                                    (route) => false);
-                              }
-                            });
+                            Navigator.pop(context);
+                            final success = await NetworkChecker.instance.run(
+                              context: context,
+                              customOfflineMessage:
+                                  "Can't connect to the internet",
+                              action: () async {
+                                await loginVM.signOut();
+                                return true;
+                              },
+                            );
+
+                            if (success == true && context.mounted) {
+                              Navigator.pushAndRemoveUntil(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (context) => LoginPage()),
+                                (route) => false,
+                              );
+                            }
                           },
                           onCancel: () {
                             Navigator.pop(context);
                           });
                     });
-          }, child: Text("Logout")),
+              },
+              child: Text("Logout")),
         ],
       ),
     );

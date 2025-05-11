@@ -1,8 +1,12 @@
-
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import 'package:temulapak_app/data/local/hive_service.dart';
+import 'package:temulapak_app/data/network/user_service.dart';
 import 'package:temulapak_app/utils/logger.dart';
+
+final loginServiceProvider = Provider<LoginService>((ref) {
+  return LoginService();
+});
 
 class LoginService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -34,7 +38,11 @@ class LoginService {
       final userCredential = await _auth.signInWithCredential(credential);
       final user = userCredential.user;
 
-      if (user == null) {
+      if (user != null) {
+        final userService = UserService();
+        await userService.addProfileFromGoogle(user);
+        
+      } else {
         throw FirebaseAuthException(
             code: 'null-user',
             message: 'Failed to get user after authentication');
@@ -46,7 +54,7 @@ class LoginService {
       Logger.log("Display Name : ${user.displayName}");
 
       // Save user to Local Storage
-      await HiveService.instance.saveUser(user);
+      // await HiveService.instance.saveUser(user);
     } on FirebaseAuthException catch (e) {
       Logger.error("Firebase Auth Error", error: e);
       Logger.error("Code: ${e.code}, Message: ${e.message}");
@@ -64,12 +72,21 @@ class LoginService {
 
   Future<void> signOut() async {
     try {
-      await HiveService.instance.clearUser();
       await _auth.signOut();
       await _googleSignIn.signOut();
       Logger.log("User signed out successfully");
     } catch (e) {
       Logger.error("Sign out error", error: e);
     }
+  }
+
+  User? getCurrentUser() {
+    final user = _auth.currentUser;
+    if (user == null) {
+      Logger.log("No user is currently signed in");
+      return null;
+    }
+
+    return user;
   }
 }

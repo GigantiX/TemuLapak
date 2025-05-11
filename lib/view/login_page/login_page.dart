@@ -2,8 +2,10 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:temulapak_app/assets/mycolor.dart';
+import 'package:temulapak_app/data/location/location_services.dart';
 import 'package:temulapak_app/model/login/login_state.dart';
 import 'package:temulapak_app/utils/custom_dialog.dart';
 import 'package:temulapak_app/utils/loading/loading.dart';
@@ -123,11 +125,64 @@ class LoginPage extends ConsumerWidget {
                 child: ElevatedButton(
                     onPressed: () async {
                       Logger.log("Login Pressed");
-                      NetworkChecker.instance.execute(context, () async {
-                        await ref
-                            .read(loginViewModelProvider.notifier)
-                            .googleSignIn();
-                      });
+
+                      final permissionGranted =
+                          await LocationServices.instance.checkPermission();
+
+                      if (!permissionGranted) {
+                        if (!context.mounted) return;
+                        final hasSomePermission =
+                            await Geolocator.checkPermission() !=
+                                    LocationPermission.denied &&
+                                await Geolocator.checkPermission() !=
+                                    LocationPermission.deniedForever;
+                        final isPreciseAvailable = await LocationServices
+                            .instance
+                            .isPreciseLocAvailable();
+                        if (!context.mounted) return;
+
+                        final title = hasSomePermission && !isPreciseAvailable
+                            ? "Precise Location Required"
+                            : "Location Permission Required";
+                        final content = hasSomePermission && !isPreciseAvailable
+                            ? "TemuLapak needs access to your precise location to find nearby vendors. Please enable precise location in settings."
+                            : "TemuLapak needs access to your location to find nearby vendors. Please enable location permissions in settings.";
+                        showDialog(
+                          context: context,
+                          builder: (context) => CustomAlertDialog(
+                            title: title,
+                            content: content,
+                            confirmText: "Open Settings",
+                            cancelText: "Cancel",
+                            icon: Icons.location_on,
+                            iconColor: Colors.white,
+                            dialogColor: MyColor.orange,
+                            onConfirm: () async {
+                              Navigator.pop(context);
+                              if (hasSomePermission && !isPreciseAvailable) {
+                                await Geolocator.openAppSettings();
+                              } else {
+                                await Geolocator.openLocationSettings();
+                              }
+                            },
+                            onCancel: () {
+                              Navigator.pop(context);
+                            },
+                          ),
+                        );
+
+                        return;
+                      }
+
+                      if (context.mounted) {
+                        await NetworkChecker.instance
+                            .run(context: context, action: () async {
+                              await ref
+                              .read(loginViewModelProvider.notifier)
+                              .googleSignIn();
+                              return true;
+                            });
+                      }
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.white,
