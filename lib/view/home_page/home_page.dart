@@ -3,11 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:temulapak_app/assets/mycolor.dart';
-import 'package:temulapak_app/utils/custom_dialog.dart';
-import 'package:temulapak_app/utils/network_checker.dart';
 import 'package:temulapak_app/view/home_page/home_viewmodel.dart';
-import 'package:temulapak_app/view/login_page/login_page.dart';
-import 'package:temulapak_app/view/login_page/login_viewmodel.dart';
 
 class HomePage extends ConsumerWidget {
   const HomePage({super.key});
@@ -54,13 +50,19 @@ Widget homepageAppBar() {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text("Lokasi saya"),
-            Row(children: [
-            Icon(Icons.location_on, color: MyColor.orange, size: 20,),
-              Text(
-              'Jakarta, Indonesia',
-              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
-            )
-            ],),
+            Row(
+              children: [
+                Icon(
+                  Icons.location_on,
+                  color: MyColor.orange,
+                  size: 20,
+                ),
+                Text(
+                  'Jakarta, Indonesia',
+                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+                )
+              ],
+            ),
           ],
         )),
         IconButton(
@@ -89,26 +91,25 @@ Widget homepageCarousel(WidgetRef ref) {
         itemBuilder: (context, index, realIndex) {
           return ClipRRect(
             borderRadius: BorderRadius.circular(10),
-            child: Image.network(imgList[index],
-                fit: BoxFit.cover,
-                width: 280,
-                height: 160, loadingBuilder: (context, child, loadingProgress) {
-              if (loadingProgress == null) return child;
+            child: Image.network(
+              imgList[index],
+              fit: BoxFit.cover,
+              width: 280,
+              height: 160,
+              loadingBuilder: (context, child, loadingProgress) {
+                if (loadingProgress == null) return child;
 
-              return Shimmer.fromColors(
-                baseColor: Colors.grey[300]!,
-                highlightColor: Colors.grey[100]!,
-                child: Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(10),
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-              );
-            }),
+                return _buildShimmer();
+              },
+              errorBuilder: (context, error, stackTrace) {
+                return Image.asset(
+                  "lib/assets/images/thumbnail.jpeg",
+                  fit: BoxFit.cover,
+                  width: 280,
+                  height: 160,
+                  );
+              },
+            ),
           );
         },
         options: CarouselOptions(
@@ -119,5 +120,21 @@ Widget homepageCarousel(WidgetRef ref) {
             ref.read(carouselIndexProvider.notifier).state = index;
           },
         )),
+  );
+}
+
+Widget _buildShimmer() {
+  return Shimmer.fromColors(
+    baseColor: Colors.grey[300]!,
+    highlightColor: Colors.grey[100]!,
+    child: Padding(
+      padding: const EdgeInsets.all(8.0),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(10),
+          color: Colors.white,
+        ),
+      ),
+    ),
   );
 }
