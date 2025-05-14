@@ -38,3 +38,15 @@ flutter:
     - lib/assets/images/
     - lib/assets/icons/
     - lib/assets/animation/
+  fonts:
+    - family: Inter
+      fonts:
+        - asset: lib/assets/fonts/Inter_Regular.ttf
+        - asset: lib/assets/fonts/Inter_SemiBold.ttf
+          weight: 600
+        - asset: lib/assets/fonts/Inter_Medium.ttf
+          weight: 500
+        - asset: lib/assets/fonts/Inter_Light.ttf
+          weight: 300
+        - asset: lib/assets/fonts/Inter_Bold.ttf
+          weight: 700
