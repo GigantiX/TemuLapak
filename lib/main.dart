@@ -2,7 +2,6 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:temulapak_app/data/local/hive_service.dart';
 import 'package:temulapak_app/view/chat_page/chat_page.dart';
 import 'package:temulapak_app/view/favorite_page/favorite_page.dart';
@@ -42,7 +41,7 @@ class MyApp extends ConsumerWidget {
       title: 'TemuLapak',
       theme: ThemeData(
         primarySwatch: Colors.blue,
-        textTheme: GoogleFonts.interTextTheme()
+        fontFamily: 'Inter',
       ),
       home: loginState.user != null ? const NavigationPage() : const LoginPage(),
       routes: {

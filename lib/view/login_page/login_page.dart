@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:temulapak_app/assets/mycolor.dart';
 import 'package:temulapak_app/data/location/location_services.dart';
 import 'package:temulapak_app/model/login/login_state.dart';
@@ -70,10 +69,11 @@ class LoginPage extends ConsumerWidget {
                     const SizedBox(width: 5),
                     Text(
                       "TemuLapak",
-                      style: GoogleFonts.inter(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 20,
-                          color: MyColor.orange),
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w600,
+                        color: MyColor.orange,
+                      ),
                     ),
                   ],
                 ),
@@ -94,7 +94,7 @@ class LoginPage extends ConsumerWidget {
                     width: 180,
                     child: Text(
                       "Jelajahi, Temukan Dan Nikmati Penjual Terdekat!",
-                      style: GoogleFonts.inter(
+                      style: TextStyle(
                           fontWeight: FontWeight.w600, fontSize: 20),
                       textAlign: TextAlign.center,
                     ),
@@ -106,7 +106,7 @@ class LoginPage extends ConsumerWidget {
                     width: 250,
                     child: Text(
                       "Live Tracking mempermudah anda menemukan pedagang favoritmu.",
-                      style: GoogleFonts.inter(
+                      style: TextStyle(
                           fontWeight: FontWeight.w400,
                           fontSize: 14,
                           color: MyColor.blackPlain),
@@ -201,7 +201,7 @@ class LoginPage extends ConsumerWidget {
                         ),
                         SizedBox(width: 10),
                         Text("Masuk dengan Google",
-                            style: GoogleFonts.inter(
+                            style: TextStyle(
                                 fontWeight: FontWeight.w500,
                                 fontSize: 16,
                                 color: MyColor.blackPlain)),
