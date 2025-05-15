@@ -14,7 +14,7 @@ class ChatPage extends ConsumerWidget {
       body: Center(
         child: const Text('Chat Page'),
       ),
-      backgroundColor: MyColor.white,
+      backgroundColor: MyColor.grey,
     );
   }
 }
