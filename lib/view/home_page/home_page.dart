@@ -3,20 +3,35 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:temulapak_app/assets/mycolor.dart';
+import 'package:temulapak_app/model/state/app_state.dart';
 import 'package:temulapak_app/view/home_page/home_viewmodel.dart';
 
-class HomePage extends ConsumerWidget {
+class HomePage extends ConsumerStatefulWidget {
   const HomePage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends ConsumerState<HomePage> {
+  @override
+  void initState() {
+    super.initState();
+
+    Future.microtask(() => ref.read(homeViewmodelProvider.notifier).getUser());
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final userState = ref.watch(homeViewmodelProvider);
+
     return Scaffold(
       body: SafeArea(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.start,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            homepageAppBar(),
+            homepageAppBar(userState),
             homepageCarousel(ref),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -33,7 +48,7 @@ class HomePage extends ConsumerWidget {
   }
 }
 
-Widget homepageAppBar() {
+Widget homepageAppBar(AppState userState) {
   return Padding(
     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
     child: Row(
@@ -41,7 +56,11 @@ Widget homepageAppBar() {
       children: [
         CircleAvatar(
           radius: 20,
-          backgroundImage: NetworkImage('https://picsum.photos/200/300'),
+          backgroundImage: userState.maybeWhen(
+            success: (user) => user != null 
+            ? NetworkImage(user.photoURL!) 
+            : AssetImage("lib/assets/images/thumbnail.jpeg"),
+            orElse: () => AssetImage("lib/assets/images/thumbnail.jpeg")),
         ),
         SizedBox(width: 10),
         Expanded(
@@ -107,7 +126,7 @@ Widget homepageCarousel(WidgetRef ref) {
                   fit: BoxFit.cover,
                   width: 280,
                   height: 160,
-                  );
+                );
               },
             ),
           );
