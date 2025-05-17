@@ -4,6 +4,8 @@ import 'package:temulapak_app/model/user/user_model.dart';
 import 'package:temulapak_app/utils/logger.dart';
 
 class UserService {
+  final user = FirebaseAuth.instance.currentUser;
+
   final CollectionReference _usersCollection =
       FirebaseFirestore.instance.collection('users');
 
@@ -16,6 +18,7 @@ class UserService {
       if (docSnapshot.exists) {
         final Map<String, dynamic> updateData = {};
 
+        updateData['uid'] = user.uid;
         if (user.email != null) updateData['email'] = user.email;
         if (user.displayName != null) {
           updateData['displayName'] = user.displayName;
@@ -32,7 +35,7 @@ class UserService {
             email: user.email,
             displayName: user.displayName,
             photoURL: user.photoURL,
-            merchantStatus: false);
+            merchantOwner: false);
         await _usersCollection.doc(user.uid).set(newUser.toMap());
         Logger.log('Profile created for user: ${user.uid}');
       }
@@ -42,12 +45,31 @@ class UserService {
     }
   }
 
-  Future<UserModel?> getUserById(String uid) async {
+  String? getCurrentUID() {
+    return user?.uid;
+  }
+
+  Future<UserModel?> getCurrentUser() async {
     try {
+      Logger.log("Fetching current user profile");
+      final uid = getCurrentUID();
+
+      Logger.log("Current UID: $uid");
+      // Add check for null UID
+      if (uid == null) {
+        Logger.log("No user currently logged in");
+        return null;
+      }
+
       final docSnapshot = await _usersCollection.doc(uid).get();
+      Logger.log("Document snapshot: ${docSnapshot.data().toString()}");
+      final data = UserModel.fromMap(docSnapshot.data() as Map<String, dynamic>);
+      Logger.log("User data: ${data.photoURL}");
 
       if (docSnapshot.exists) {
-        return UserModel.fromMap(docSnapshot.data() as Map<String, dynamic>);
+        final data = UserModel.fromMap(docSnapshot.data() as Map<String, dynamic>);
+        Logger.log("User data: ${data.photoURL}");
+        return data;
       } else {
         Logger.log("User with uid $uid does not exist");
         return null;
