@@ -1,9 +1,11 @@
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:temulapak_app/assets/mycolor.dart';
 import 'package:temulapak_app/model/state/app_state.dart';
+import 'package:temulapak_app/utils/logger.dart';
 import 'package:temulapak_app/view/home_page/home_viewmodel.dart';
 
 class HomePage extends ConsumerStatefulWidget {
@@ -18,25 +20,31 @@ class _HomePageState extends ConsumerState<HomePage> {
   void initState() {
     super.initState();
 
-    Future.microtask(() => ref.read(homeViewmodelProvider.notifier).getUser());
+    Future.microtask(() {
+      ref.read(homeViewmodelProvider.notifier).getUser();
+      ref.read(addressViewModelProvider.notifier).getAddress();
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     final userState = ref.watch(homeViewmodelProvider);
+    final addressState = ref.watch(addressViewModelProvider);
 
     return Scaffold(
+      backgroundColor: MyColor.whitePlain,
       body: SafeArea(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.start,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            homepageAppBar(userState),
+            homepageAppBar(userState, addressState),
             homepageCarousel(ref),
+            homepageCategory(),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Text(
-                "Upcoming Events",
+                "Rekomendasi",
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
                 textAlign: TextAlign.center,
               ),
@@ -48,7 +56,7 @@ class _HomePageState extends ConsumerState<HomePage> {
   }
 }
 
-Widget homepageAppBar(AppState userState) {
+Widget homepageAppBar(AppState userState, AppState<String, Exception> address) {
   return Padding(
     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
     child: Row(
@@ -57,10 +65,10 @@ Widget homepageAppBar(AppState userState) {
         CircleAvatar(
           radius: 20,
           backgroundImage: userState.maybeWhen(
-            success: (user) => user != null 
-            ? NetworkImage(user.photoURL!) 
-            : AssetImage("lib/assets/images/thumbnail.jpeg"),
-            orElse: () => AssetImage("lib/assets/images/thumbnail.jpeg")),
+              success: (user) => user != null
+                  ? NetworkImage(user.photoURL!)
+                  : AssetImage("lib/assets/images/thumbnail.jpeg"),
+              orElse: () => AssetImage("lib/assets/images/thumbnail.jpeg")),
         ),
         SizedBox(width: 10),
         Expanded(
@@ -76,10 +84,39 @@ Widget homepageAppBar(AppState userState) {
                   color: MyColor.orange,
                   size: 20,
                 ),
-                Text(
-                  'Jakarta, Indonesia',
-                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
-                )
+                Expanded(
+                  child: address.maybeWhen(
+                    idle: () => Text("Fetching location...",
+                        style: TextStyle(
+                            fontSize: 15, fontWeight: FontWeight.w700)),
+                    loading: () => Shimmer.fromColors(
+                      baseColor: Colors.grey[300]!,
+                      highlightColor: Colors.grey[100]!,
+                      child: Container(
+                        height: 15,
+                        width: 100,
+                        color: Colors.white,
+                      ),
+                    ),
+                    success: (addressText) => Text(
+                      addressText,
+                      style:
+                          TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    error: (_, __) => Text(
+                      "Error fetching location",
+                      style:
+                          TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+                    ),
+                    orElse: () => Text(
+                      "Location not available",
+                      style:
+                          TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+                    ),
+                  ),
+                ),
               ],
             ),
           ],
@@ -152,6 +189,62 @@ Widget _buildShimmer() {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(10),
           color: Colors.white,
+        ),
+      ),
+    ),
+  );
+}
+
+Widget homepageCategory() {
+  return Padding(
+    padding: const EdgeInsets.symmetric(horizontal: 1, vertical: 10),
+    child: Row(
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      children: [
+        _categoryItem(
+            icon: Icon(Icons.share_location, color: MyColor.orange, size: 30,), label: "Terdekat", onTap: () {
+              Logger.log("Clicked on Terdekat");
+            }), 
+        _categoryItem(
+            icon: FaIcon(FontAwesomeIcons.whiskeyGlass, color: MyColor.orange, size: 25,), label: "Minuman", onTap: () {
+              Logger.log("Clicked on Minuman");
+            }),
+        _categoryItem(
+            icon: FaIcon(FontAwesomeIcons.bowlFood, color: MyColor.orange, size: 25,), label: "Makanan", onTap: () {
+              Logger.log("Clicked on Makanan");
+            }),
+        _categoryItem(
+            icon: FaIcon(FontAwesomeIcons.cookieBite, color: MyColor.orange, size: 25,), label: "Cemilan", onTap: () {
+              Logger.log("Clicked on Cemilan");
+            }),
+      ],
+    ),
+  );
+}
+
+Widget _categoryItem({
+  required Widget icon,
+  required String label,
+  required VoidCallback onTap,
+}) {
+  return GestureDetector(
+    onTap: onTap,
+    child: Container(
+      width: 72,
+      height: 72,
+      decoration: BoxDecoration(
+        color: MyColor.white,
+        borderRadius: BorderRadius.circular(7),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
+        child: Column(
+          children: [
+            icon,
+            SizedBox(height: 7),
+            Text(label,
+              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
+          ],
         ),
       ),
     ),
