@@ -7,6 +7,8 @@ import 'package:temulapak_app/assets/mycolor.dart';
 import 'package:temulapak_app/model/state/app_state.dart';
 import 'package:temulapak_app/utils/logger.dart';
 import 'package:temulapak_app/view/home_page/home_viewmodel.dart';
+import 'package:temulapak_app/view/listmerchant_page/listmerchant_page.dart';
+import 'package:temulapak_app/view/listmerchant_page/listmerchant_viewmodel.dart';
 
 class HomePage extends ConsumerStatefulWidget {
   const HomePage({super.key});
@@ -40,7 +42,7 @@ class _HomePageState extends ConsumerState<HomePage> {
           children: [
             homepageAppBar(userState, addressState),
             homepageCarousel(ref),
-            homepageCategory(),
+            _homepageCategory(),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Text(
@@ -54,6 +56,65 @@ class _HomePageState extends ConsumerState<HomePage> {
       ),
     );
   }
+
+  Widget _homepageCategory() {
+  return Padding(
+    padding: const EdgeInsets.symmetric(horizontal: 1, vertical: 10),
+    child: Row(
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      children: [
+        _categoryItem(
+            icon: Icon(Icons.share_location, color: MyColor.orange, size: 30,), label: "Terdekat", onTap: () {
+              Logger.log("Clicked on Terdekat");
+              Navigator.push(
+              context, 
+                MaterialPageRoute(
+                  builder: (context) => ListMerchantPage(
+                    category: MerchantCategory.nearest,
+                  ),
+                ),
+              );
+            }), 
+        _categoryItem(
+            icon: FaIcon(FontAwesomeIcons.whiskeyGlass, color: MyColor.orange, size: 25,), label: "Minuman", onTap: () {
+              Logger.log("Clicked on Minuman");
+              Navigator.push(
+              context, 
+                MaterialPageRoute(
+                  builder: (context) => ListMerchantPage(
+                    category: MerchantCategory.drinks,
+                  ),
+                ),
+              );
+            }),
+        _categoryItem(
+            icon: FaIcon(FontAwesomeIcons.bowlFood, color: MyColor.orange, size: 25,), label: "Makanan", onTap: () {
+              Logger.log("Clicked on Makanan");
+              Navigator.push(
+              context, 
+                MaterialPageRoute(
+                  builder: (context) => ListMerchantPage(
+                    category: MerchantCategory.food,
+                  ),
+                ),
+              );
+            }),
+        _categoryItem(
+            icon: FaIcon(FontAwesomeIcons.cookieBite, color: MyColor.orange, size: 25,), label: "Cemilan", onTap: () {
+              Logger.log("Clicked on Cemilan");
+              Navigator.push(
+              context, 
+                MaterialPageRoute(
+                  builder: (context) => ListMerchantPage(
+                    category: MerchantCategory.snacks,
+                  ),
+                ),
+              );
+            }),
+      ],
+    ),
+  );
+}
 }
 
 Widget homepageAppBar(AppState userState, AppState<String, Exception> address) {
@@ -195,32 +256,7 @@ Widget _buildShimmer() {
   );
 }
 
-Widget homepageCategory() {
-  return Padding(
-    padding: const EdgeInsets.symmetric(horizontal: 1, vertical: 10),
-    child: Row(
-      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-      children: [
-        _categoryItem(
-            icon: Icon(Icons.share_location, color: MyColor.orange, size: 30,), label: "Terdekat", onTap: () {
-              Logger.log("Clicked on Terdekat");
-            }), 
-        _categoryItem(
-            icon: FaIcon(FontAwesomeIcons.whiskeyGlass, color: MyColor.orange, size: 25,), label: "Minuman", onTap: () {
-              Logger.log("Clicked on Minuman");
-            }),
-        _categoryItem(
-            icon: FaIcon(FontAwesomeIcons.bowlFood, color: MyColor.orange, size: 25,), label: "Makanan", onTap: () {
-              Logger.log("Clicked on Makanan");
-            }),
-        _categoryItem(
-            icon: FaIcon(FontAwesomeIcons.cookieBite, color: MyColor.orange, size: 25,), label: "Cemilan", onTap: () {
-              Logger.log("Clicked on Cemilan");
-            }),
-      ],
-    ),
-  );
-}
+
 
 Widget _categoryItem({
   required Widget icon,
