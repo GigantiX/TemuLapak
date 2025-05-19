@@ -457,41 +457,25 @@ Widget _categoryItem({
   return GestureDetector(
     onTap: onTap,
     child: Container(
-      // Remove fixed width dan height, biarkan Expanded yang mengatur
-      constraints: BoxConstraints(
-        minHeight: 72, // Minimum height untuk konsistensi
-      ),
+      width: 72,
+      height: 72,
       decoration: BoxDecoration(
         color: MyColor.white,
         borderRadius: BorderRadius.circular(7),
       ),
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Container untuk icon dengan ukuran tetap
-            SizedBox(
-              height: 32,
-              child: icon,
-            ),
-            const SizedBox(height: 6),
-            // Text yang responsive
-            FittedBox(
-              fit: BoxFit.scaleDown,
-              child: Text(
-                label,
-                style: const TextStyle(
-                  fontSize: 12, 
-                  fontWeight: FontWeight.w500
-                ),
-                textAlign: TextAlign.center,
-                maxLines: 1,
-              ),
-            ),
+            icon,
+            SizedBox(height: 7),
+            Text(label,
+              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
           ],
         ),
       ),
     ),
   );
 }
+
+
