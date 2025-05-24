@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:temulapak_app/assets/mycolor.dart';
-import 'package:temulapak_app/view/listmerchant_page/listmerchant_viewmodel.dart';
+import 'package:temulapak_app/view/list_merchant_page/list_merchant_viewmodel.dart';
 
 class ListMerchantPage extends StatelessWidget {
   final MerchantCategory category;

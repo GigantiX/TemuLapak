@@ -5,10 +5,12 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:temulapak_app/assets/mycolor.dart';
 import 'package:temulapak_app/model/state/app_state.dart';
+import 'package:temulapak_app/utils/loading/loading.dart';
 import 'package:temulapak_app/utils/logger.dart';
 import 'package:temulapak_app/view/home_page/home_viewmodel.dart';
-import 'package:temulapak_app/view/listmerchant_page/listmerchant_page.dart';
-import 'package:temulapak_app/view/listmerchant_page/listmerchant_viewmodel.dart';
+import 'package:temulapak_app/view/list_merchant_page/list_merchant_page.dart';
+import 'package:temulapak_app/view/list_merchant_page/list_merchant_viewmodel.dart';
+import 'package:temulapak_app/view/register_merchant_page/register_merchant_page.dart';
 
 class HomePage extends ConsumerStatefulWidget {
   const HomePage({super.key});
@@ -114,10 +116,9 @@ class _HomePageState extends ConsumerState<HomePage> {
       ],
     ),
   );
-}
-}
+  }
 
-Widget homepageAppBar(AppState userState, AppState<String, Exception> address) {
+  Widget homepageAppBar(AppState userState, AppState<String, Exception> address) {
   return Padding(
     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
     child: Row(
@@ -183,7 +184,27 @@ Widget homepageAppBar(AppState userState, AppState<String, Exception> address) {
           ],
         )),
         IconButton(
-          onPressed: () {},
+          onPressed: () {
+            Logger.log("Clicked on notifications icon");
+            // Show loading indicator while page prepares
+            Loading.show(context);
+            
+            // Use a delay to allow loading to appear
+            Future.delayed(Duration(milliseconds: 100), () {
+              Navigator.push(
+                context, 
+                MaterialPageRoute(
+                  builder: (context) => RegisterMerchantPage(),
+                )
+              ).then((_) {
+                // Ensure loading is hidden when returning
+                Loading.hide();
+              });
+              
+              // Hide loading after navigation begins
+              Loading.hide();
+            });
+          },
           icon: const Icon(Icons.notifications_none),
           color: MyColor.blackPlain,
           iconSize: 33,
@@ -191,6 +212,7 @@ Widget homepageAppBar(AppState userState, AppState<String, Exception> address) {
       ],
     ),
   );
+  }
 }
 
 Widget homepageCarousel(WidgetRef ref) {

@@ -1,7 +1,7 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:temulapak_app/model/state/app_state.dart';
 
-part 'listmerchant_viewmodel.g.dart';
+part 'list_merchant_viewmodel.g.dart';
 
 enum MerchantCategory { nearest, drinks, food, snacks }
 

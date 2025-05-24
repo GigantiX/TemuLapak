@@ -11,7 +11,7 @@ class MerchantModel {
   final int? merchantPopularity;
   final List<Product>? products;
 
-  MerchantModel(
+  MerchantModel( 
       {required this.uid,
       this.merchantStatus = false,
       this.merchantName,
