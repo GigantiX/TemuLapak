@@ -5,10 +5,10 @@ class MerchantModel {
   final bool merchantStatus;
   final String? merchantName;
   final String? merchantDesc;
+  final String? merchantImgUrl;
   final double? merchantLocLat;
   final double? merchantLocLong;
-  final double? merchantCurrLat;
-  final double? merchantCurrLong;
+  final int? merchantPopularity;
   final List<Product>? products;
 
   MerchantModel(
@@ -18,8 +18,8 @@ class MerchantModel {
       this.merchantDesc,
       this.merchantLocLat,
       this.merchantLocLong,
-      this.merchantCurrLat,
-      this.merchantCurrLong,
+      this.merchantImgUrl,
+      this.merchantPopularity,
       this.products});
 
   Map<String, dynamic> toMap() {
@@ -30,8 +30,8 @@ class MerchantModel {
       'merchantDesc': merchantDesc,
       'merchantLocLat': merchantLocLat,
       'merchantLocLong': merchantLocLong,
-      'merchantCurrLat': merchantCurrLat,
-      'merchantCurrLong': merchantCurrLong,
+      'merchantImgUrl': merchantImgUrl,
+      'merchantPopularity': merchantPopularity,
       'products': products?.map((product) => product.toMap()).toList(),
     };
   }
@@ -44,8 +44,8 @@ class MerchantModel {
       merchantDesc: map['merchantDesc'],
       merchantLocLat: map['merchantLocLat']?.toDouble(),
       merchantLocLong: map['merchantLocLong']?.toDouble(),
-      merchantCurrLat: map['merchantCurrLat']?.toDouble(),
-      merchantCurrLong: map['merchantCurrLong']?.toDouble(),
+      merchantImgUrl: map['merchantImgUrl'],
+      merchantPopularity: map['merchantPopularity']?.toInt(),
       products: map['products'] != null
           ? List<Product>.from(
               (map['products'] as List).map((item) => Product.fromMap(item)))
@@ -60,8 +60,8 @@ class MerchantModel {
     String? merchantDesc,
     double? merchantLocLat,
     double? merchantLocLong,
-    double? merchantCurrLat,
-    double? merchantCurrLong,
+    String? merchantImgUrl,
+    int? merchantPopularity,
     List<Product>? products,
   }) {
     return MerchantModel(
@@ -71,8 +71,8 @@ class MerchantModel {
       merchantDesc: merchantDesc ?? this.merchantDesc,
       merchantLocLat: merchantLocLat ?? this.merchantLocLat,
       merchantLocLong: merchantLocLong ?? this.merchantLocLong,
-      merchantCurrLat: merchantCurrLat ?? this.merchantCurrLat,
-      merchantCurrLong: merchantCurrLong ?? this.merchantCurrLong,
+      merchantImgUrl: merchantImgUrl ?? this.merchantImgUrl,
+      merchantPopularity: merchantPopularity ?? this.merchantPopularity,
       products: products ?? this.products,
     );
   }
