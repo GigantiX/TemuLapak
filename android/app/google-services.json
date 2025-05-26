@@ -59,6 +59,22 @@
       },
       "oauth_client": [
         {
+          "client_id": "96784781082-ie5f591ltdslak7de6dnpide2cut639p.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.temulapak_app",
+            "certificate_hash": "bfe97bd0ebe999cbc966f0821ee52755dddfcd48"
+          }
+        },
+        {
+          "client_id": "96784781082-v1e7ftp2n4drl5qr47lseehj16vv79i6.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.temulapak_app",
+            "certificate_hash": "4239aa9730b7d60788ec2eb46e1f2d4669efb18e"
+          }
+        },
+        {
           "client_id": "96784781082-sk6hrd9pq1pukqb9j84r025c15tss53o.apps.googleusercontent.com",
           "client_type": 3
         }
