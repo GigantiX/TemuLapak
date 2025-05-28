@@ -35,7 +35,7 @@ class UserService {
             email: user.email,
             displayName: user.displayName,
             photoURL: user.photoURL,
-            merchantOwner: false);
+            isMerchant: false);
         await _usersCollection.doc(user.uid).set(newUser.toMap());
         Logger.log('Profile created for user: ${user.uid}');
       }
@@ -63,11 +63,13 @@ class UserService {
 
       final docSnapshot = await _usersCollection.doc(uid).get();
       Logger.log("Document snapshot: ${docSnapshot.data().toString()}");
-      final data = UserModel.fromMap(docSnapshot.data() as Map<String, dynamic>);
+      final data =
+          UserModel.fromMap(docSnapshot.data() as Map<String, dynamic>);
       Logger.log("User data: ${data.photoURL}");
 
       if (docSnapshot.exists) {
-        final data = UserModel.fromMap(docSnapshot.data() as Map<String, dynamic>);
+        final data =
+            UserModel.fromMap(docSnapshot.data() as Map<String, dynamic>);
         Logger.log("User data: ${data.photoURL}");
         return data;
       } else {

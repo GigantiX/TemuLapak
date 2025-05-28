@@ -5,14 +5,14 @@ class UserModel {
   final String? email;
   final String? displayName;
   final String? photoURL;
-  final bool merchantOwner;
+  final bool isMerchant;
 
   UserModel({
     this.uid,
     this.email,
     this.displayName,
     this.photoURL,
-    this.merchantOwner = false,
+    this.isMerchant = false,
   });
 
   factory UserModel.fromFirebaseUser(User user) {
@@ -30,34 +30,34 @@ class UserModel {
       'email': email,
       'displayName': displayName,
       'photoURL': photoURL,
-      'merchantOwner': merchantOwner,
+      'isMerchant': isMerchant,
     };
   }
 
   factory UserModel.fromMap(Map<String, dynamic> map) {
     return UserModel(
-        uid: map['uid']?.toString() ?? '',
-        email: map['email'] as String?,
-        displayName: map['displayName'] as String?,
-        photoURL: map['photoURL'] as String?,
-        merchantOwner: map['merchantOwner'] as bool? ?? false,
+      uid: map['uid']?.toString() ?? '',
+      email: map['email'] as String?,
+      displayName: map['displayName'] as String?,
+      photoURL: map['photoURL'] as String?,
+      isMerchant: map['isMerchant'] as bool? ?? false,
     );
   }
 
-    /// Creates a copy of this UserModel with the given fields replaced with new values
+  /// Creates a copy of this UserModel with the given fields replaced with new values
   UserModel copyWith({
     String? uid,
     String? email,
     String? displayName,
     String? photoURL,
-    bool? merchantOwner,
+    bool? isMerchant,
   }) {
     return UserModel(
       uid: uid ?? this.uid,
       email: email ?? this.email,
       displayName: displayName ?? this.displayName,
       photoURL: photoURL ?? this.photoURL,
-      merchantOwner: merchantOwner ?? this.merchantOwner,
+      isMerchant: isMerchant ?? this.isMerchant,
     );
   }
 }
