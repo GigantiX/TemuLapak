@@ -67,6 +67,9 @@ class AppState<T, E extends Object> {
       case AppStatus.success:
         return success(data as T);
       case AppStatus.error:
+      if (this.error == null) {
+        return idle(); 
+      }
       return error(error as E, message);
     }
   }

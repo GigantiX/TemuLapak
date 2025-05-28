@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:geoflutterfire_plus/geoflutterfire_plus.dart';
 import 'package:temulapak_app/model/product/product_model.dart';
 
 class MerchantModel {
@@ -9,7 +11,9 @@ class MerchantModel {
   final double? merchantLocLat;
   final double? merchantLocLong;
   final int? merchantPopularity;
+  final List<String>? merchantCategory;
   final List<Product>? products;
+  final GeoFirePoint? geoPoint;
 
   MerchantModel(
       {required this.uid,
@@ -20,10 +24,12 @@ class MerchantModel {
       this.merchantLocLong,
       this.merchantImgUrl,
       this.merchantPopularity,
-      this.products});
+      this.merchantCategory,
+      this.products,
+      this.geoPoint});
 
   Map<String, dynamic> toMap() {
-    return {
+    final map = {
       'uid': uid,
       'merchantStatus': merchantStatus,
       'merchantName': merchantName,
@@ -32,11 +38,19 @@ class MerchantModel {
       'merchantLocLong': merchantLocLong,
       'merchantImgUrl': merchantImgUrl,
       'merchantPopularity': merchantPopularity,
+      'merchantCategory': merchantCategory,
       'products': products?.map((product) => product.toMap()).toList(),
+      'geoPoint': geoPoint?.data,
     };
+    return map;
   }
 
   factory MerchantModel.fromMap(Map<String, dynamic> map) {
+    final rawGeo = map['geoPoint'] as Map<String, dynamic>?;
+    final geoPoint = rawGeo != null
+        ? GeoFirePoint(rawGeo['geopoint'] as GeoPoint,)
+        : null;
+
     return MerchantModel(
       uid: map['uid'] ?? '',
       merchantStatus: map['merchantStatus'] ?? false,
@@ -46,10 +60,14 @@ class MerchantModel {
       merchantLocLong: map['merchantLocLong']?.toDouble(),
       merchantImgUrl: map['merchantImgUrl'],
       merchantPopularity: map['merchantPopularity']?.toInt(),
+      merchantCategory: map['merchantCategory'] != null
+          ? List<String>.from(map['merchantCategory'])
+          : null,
       products: map['products'] != null
           ? List<Product>.from(
               (map['products'] as List).map((item) => Product.fromMap(item)))
           : null,
+      geoPoint: geoPoint,
     );
   }
 
@@ -62,7 +80,9 @@ class MerchantModel {
     double? merchantLocLong,
     String? merchantImgUrl,
     int? merchantPopularity,
+    List<String>? merchantCategory,
     List<Product>? products,
+    GeoFirePoint? geoPoint,
   }) {
     return MerchantModel(
       uid: uid ?? this.uid,
@@ -73,7 +93,9 @@ class MerchantModel {
       merchantLocLong: merchantLocLong ?? this.merchantLocLong,
       merchantImgUrl: merchantImgUrl ?? this.merchantImgUrl,
       merchantPopularity: merchantPopularity ?? this.merchantPopularity,
+      merchantCategory: merchantCategory ?? this.merchantCategory,
       products: products ?? this.products,
+      geoPoint: geoPoint ?? this.geoPoint,
     );
   }
 }

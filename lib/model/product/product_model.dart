@@ -1,3 +1,5 @@
+import 'package:flutter/material.dart';
+
 class Product {
   final String? productName;
   final String? productPrice;
@@ -9,8 +11,8 @@ class Product {
     String? productPrice,
   }) {
     return Product(
-      productName:  productName ?? this.productName,
-      productPrice:  productPrice ?? this.productPrice,
+      productName: productName ?? this.productName,
+      productPrice: productPrice ?? this.productPrice,
     );
   }
 
@@ -26,4 +28,14 @@ class Product {
         productName: map['productName'] as String?,
         productPrice: map['productPrice'] as String?);
   }
+}
+
+class ProductField {
+  final TextEditingController nameController;
+  final TextEditingController priceController;
+
+  ProductField({
+    required this.nameController, 
+    required this.priceController}
+    );
 }
