@@ -22,31 +22,28 @@ class RegisterMerchantViewModel extends _$RegisterMerchantViewModel {
     required XFile imageFile,
   }) async {
     try {
-      // Set state to loading
       state = AppState.loading();
       Logger.log("VM - Starting merchant registration");
       
-      // Create the merchant model
       final merchant = MerchantModel(
         uid: '',
         merchantStatus: true,
         merchantName: data.merchantName,
         merchantDesc: data.merchantDesc,
-        merchantImgUrl: null, // Will be set from uploaded image
+        merchantImgUrl: null,
         merchantLocLat: data.merchantLocLat,
         merchantLocLong: data.merchantLocLong,
+        merchantCategory: data.merchantCategory,
         products: data.products,
       );
       
       Logger.log("VM - Calling registerMerchant service");
       await _merchantService.registerMerchant(imageFile, merchant);
       
-      // Update state to success
       Logger.log("VM - Merchant registered successfully");
       state = AppState.success("Pendaftaran berhasil! Sekarang Anda sudah terdaftar sebagai penjual.");
       
     } catch (e) {
-      // Handle errors
       Logger.error("VM - Error registering merchant", error: e);
       state = AppState.error(
         e is Exception ? e : Exception(e.toString()),
@@ -92,7 +89,6 @@ class PickImageViewModel extends _$PickImageViewModel {
       state = AppState.loading();
       Logger.log("Opening ${source == ImageSource.camera ? 'camera' : 'gallery'} to pick image");
       
-      // Pick the image
       final XFile? pickedFile = await _picker.pickImage(
         source: source,
         imageQuality: 85,
@@ -107,7 +103,6 @@ class PickImageViewModel extends _$PickImageViewModel {
         return;
       }
       
-      // Check file size
       final File file = File(pickedFile.path);
       final int fileSize = await file.length();
       

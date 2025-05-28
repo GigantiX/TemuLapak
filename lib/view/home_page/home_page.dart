@@ -5,12 +5,10 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:temulapak_app/assets/mycolor.dart';
 import 'package:temulapak_app/model/state/app_state.dart';
-import 'package:temulapak_app/utils/loading/loading.dart';
 import 'package:temulapak_app/utils/logger.dart';
 import 'package:temulapak_app/view/home_page/home_viewmodel.dart';
 import 'package:temulapak_app/view/list_merchant_page/list_merchant_page.dart';
 import 'package:temulapak_app/view/list_merchant_page/list_merchant_viewmodel.dart';
-import 'package:temulapak_app/view/register_merchant_page/register_merchant_page.dart';
 
 class HomePage extends ConsumerStatefulWidget {
   const HomePage({super.key});
@@ -186,24 +184,6 @@ class _HomePageState extends ConsumerState<HomePage> {
         IconButton(
           onPressed: () {
             Logger.log("Clicked on notifications icon");
-            // Show loading indicator while page prepares
-            Loading.show(context);
-            
-            // Use a delay to allow loading to appear
-            Future.delayed(Duration(milliseconds: 100), () {
-              Navigator.push(
-                context, 
-                MaterialPageRoute(
-                  builder: (context) => RegisterMerchantPage(),
-                )
-              ).then((_) {
-                // Ensure loading is hidden when returning
-                Loading.hide();
-              });
-              
-              // Hide loading after navigation begins
-              Loading.hide();
-            });
           },
           icon: const Icon(Icons.notifications_none),
           color: MyColor.blackPlain,
@@ -217,10 +197,9 @@ class _HomePageState extends ConsumerState<HomePage> {
 
 Widget homepageCarousel(WidgetRef ref) {
   final List<String> imgList = [
-    'https://picsum.photos/id/868/1280/720',
-    'https://picsum.photos/id/869/1280/720',
-    'https://picsum.photos/id/866/1280/720',
-    'https://picsum.photos/id/862/1280/720',
+    'https://firebasestorage.googleapis.com/v0/b/project-database-63eea.appspot.com/o/banner%2FBannerTemuLapak1.png?alt=media&token=4b81f0dc-7ca2-4f90-91ec-c6bee743b622',
+    'https://firebasestorage.googleapis.com/v0/b/project-database-63eea.appspot.com/o/banner%2FBannerTemuLapak2.png?alt=media&token=c72b4d9a-db9f-4b45-87d3-9fdcaa084e9b',
+    'https://firebasestorage.googleapis.com/v0/b/project-database-63eea.appspot.com/o/banner%2FBannerTemuLapak3.png?alt=media&token=54b26ed2-b14f-42db-93a2-5ae573bbbc6b',
   ];
 
   return Padding(

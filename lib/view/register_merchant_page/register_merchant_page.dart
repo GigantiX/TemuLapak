@@ -13,7 +13,6 @@ import 'package:temulapak_app/utils/loading/loading.dart';
 import 'package:temulapak_app/utils/logger.dart';
 import 'package:temulapak_app/view/register_merchant_page/register_merchant_viewmodel.dart';
 import 'package:temulapak_app/view/widget/map_picker/map_picker_dialog.dart';
-import 'package:flutter_riverpod/src/internals.dart' show ProviderSubscription;
 
 class RegisterMerchantPage extends ConsumerStatefulWidget {
   const RegisterMerchantPage({super.key});
@@ -27,9 +26,12 @@ class _RegisterMerchantPageState extends ConsumerState<RegisterMerchantPage> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _descController = TextEditingController();
+  final List<String> _categories = ["Makanan", "Minuman", "Cemilan"];
   final _locationController = TextEditingController(text: "Pilih lokasi");
-  LatLng? _selectedLocation;
   final List<ProductField> _productFields = [];
+
+  final List<String> _selectedCategories = [];
+  LatLng? _selectedLocation;
   bool _isInitialized = false;
   ProviderSubscription<AppState<String, Exception>>? _subscription;
 
@@ -37,7 +39,6 @@ class _RegisterMerchantPageState extends ConsumerState<RegisterMerchantPage> {
   void initState() {
     super.initState();
 
-    // Defer initialization to after the first frame
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         _initializeData();
@@ -53,7 +54,6 @@ class _RegisterMerchantPageState extends ConsumerState<RegisterMerchantPage> {
       _isInitialized = true;
     });
 
-    // Use listen from the notifier instead of ref.listen
     _subscription = ref.listenManual(
         registerMerchantViewModelProvider, _handleStateChanges);
   }
@@ -76,19 +76,14 @@ class _RegisterMerchantPageState extends ConsumerState<RegisterMerchantPage> {
   void _handleStateChanges(AppState<String, Exception>? previous,
       AppState<String, Exception> current) {
     current.when(
-      idle: () {
-        // Do nothing for idle state
-      },
+      idle: () {},
       loading: () {
-        // Show loading indicator if not already shown
         Loading.show(context);
       },
       success: (message) {
         Logger.log("SUCCESS STATE TRIGGERED: $message");
-        // Ensure loading is hidden
         Loading.hide();
 
-        // Show success message
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(SnackBar(
             content: Text(message),
@@ -96,7 +91,6 @@ class _RegisterMerchantPageState extends ConsumerState<RegisterMerchantPage> {
             duration: Duration(seconds: 2),
           ));
 
-          // Navigate back after a short delay
           Future.delayed(Duration(seconds: 2), () {
             if (mounted) Navigator.of(context).pop();
           });
@@ -104,10 +98,8 @@ class _RegisterMerchantPageState extends ConsumerState<RegisterMerchantPage> {
       },
       error: (error, message) {
         Logger.error("ERROR STATE TRIGGERED: $message");
-        // Ensure loading is hidden
         Loading.hide();
 
-        // Show error message
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(SnackBar(
             content: Text(message ??
@@ -117,6 +109,43 @@ class _RegisterMerchantPageState extends ConsumerState<RegisterMerchantPage> {
           ));
         }
       },
+    );
+  }
+
+  Widget _buildCategoryChips() {
+    return Wrap(
+      spacing: 8.0,
+      runSpacing: 8.0,
+      children: _categories.map((category) {
+        final isSelected = _selectedCategories.contains(category);
+        return FilterChip(
+          label: Text(
+            category,
+            style: TextStyle(
+              color: isSelected ? MyColor.white : MyColor.orange,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          selected: isSelected,
+          selectedColor: MyColor.orange,
+          backgroundColor: MyColor.white,
+          shape: StadiumBorder(
+            side: BorderSide(
+              color: MyColor.orange,
+              width: 1.0,
+            ),
+          ),
+          onSelected: (selected) {
+            setState(() {
+              if (selected) {
+                _selectedCategories.add(category);
+              } else {
+                _selectedCategories.remove(category);
+              }
+            });
+          },
+        );
+      }).toList(),
     );
   }
 
@@ -432,6 +461,16 @@ class _RegisterMerchantPageState extends ConsumerState<RegisterMerchantPage> {
                         ),
                         SizedBox(height: 20),
                         Text(
+                          "Kategori Produk (min. 1)",
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        SizedBox(height: 5),
+                        _buildCategoryChips(),
+                        SizedBox(height: 20),
+                        Text(
                           "Lokasi Toko / Dagangan",
                           style: TextStyle(
                             fontSize: 14,
@@ -622,6 +661,18 @@ class _RegisterMerchantPageState extends ConsumerState<RegisterMerchantPage> {
                                   return;
                                 }
 
+                                if (_selectedCategories.isEmpty) {
+                                  ScaffoldMessenger.of(context)
+                                      .showSnackBar(SnackBar(
+                                    content: Text(
+                                        "Silakan pilih minimal satu kategori"),
+                                    backgroundColor: Colors.red,
+                                  ));
+                                  return;
+                                }
+                                Logger.log(
+                                    "Selected categories: $_selectedCategories");
+
                                 try {
                                   Logger.log(
                                       "All form fields validated successfully");
@@ -636,18 +687,17 @@ class _RegisterMerchantPageState extends ConsumerState<RegisterMerchantPage> {
                                   Logger.log(
                                       "Products collected: ${products.length} items");
 
-                                  // Step 4: Create merchant model from form data
                                   final merchant = MerchantModel(
-                                    uid: '', // Will be set by service
+                                    uid: '',
                                     merchantStatus: true,
                                     merchantName: _nameController.text,
                                     merchantDesc: _descController.text,
                                     merchantLocLat: _selectedLocation!.latitude,
                                     merchantLocLong:
                                         _selectedLocation!.longitude,
-                                    merchantImgUrl:
-                                        null, // Will be set by service
+                                    merchantImgUrl: null,
                                     merchantPopularity: 0,
+                                    merchantCategory: _selectedCategories,
                                     products: products,
                                   );
                                   Logger.log(
