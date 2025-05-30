@@ -7,7 +7,7 @@ part of 'register_merchant_viewmodel.dart';
 // **************************************************************************
 
 String _$registerMerchantViewModelHash() =>
-    r'dfa309ad1c8dbcbb76cf0f42805b3a6d78a5dcd4';
+    r'537c3d3eaf0665586970ba29cb94eeb7b73662b1';
 
 /// See also [RegisterMerchantViewModel].
 @ProviderFor(RegisterMerchantViewModel)

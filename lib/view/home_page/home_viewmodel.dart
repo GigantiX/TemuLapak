@@ -2,7 +2,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:temulapak_app/data/location/geocoding_service.dart';
 import 'package:temulapak_app/data/location/location_services.dart';
 import 'package:temulapak_app/data/network/user_service.dart';
+import 'package:temulapak_app/data/network/merchant_service.dart';
 import 'package:temulapak_app/model/state/app_state.dart';
+import 'package:temulapak_app/model/merchant/merchant_model.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:temulapak_app/model/user/user_model.dart';
 import 'package:temulapak_app/utils/logger.dart';
@@ -24,6 +26,12 @@ LocationServices locationServices(Ref ref) {
 @riverpod
 GeocodingService geocodingService(Ref ref) {
   return GeocodingService();
+}
+
+// NEW: Add MerchantService provider
+@riverpod
+MerchantService merchantService(Ref ref) {
+  return MerchantService();
 }
 
 @riverpod
@@ -93,6 +101,54 @@ class AddressViewModel extends _$AddressViewModel {
     } catch (e) {
       Logger.error("Error fetching address", error: e);
       state = AppState.success("No location");
+    }
+  }
+}
+
+// NEW: Recommended Merchants ViewModel
+@riverpod
+class RecommendedMerchants extends _$RecommendedMerchants {
+  @override
+  AppState<List<MerchantModel>, Exception> build() {
+    return AppState.idle();
+  }
+
+  Future<void> getRecommendedMerchants() async {
+    state = AppState.loading();
+    try {
+      Logger.log("HOMEVM - Fetching recommended merchants");
+      
+      // Get current location first
+      final locationService = ref.read(locationServicesProvider);
+      final position = await locationService.getCurrentLocation();
+      
+      if (position == null) {
+        Logger.error("No location available for recommendations");
+        state = AppState.error(
+          Exception('Location not available'),
+          message: 'Cannot get recommendations without location'
+        );
+        return;
+      }
+      
+      // Get nearby merchants
+      final merchantService = ref.read(merchantServiceProvider);
+      final nearbyMerchants = await merchantService.getNearbyMerchants(
+        latitude: position.latitude,
+        longitude: position.longitude,
+        radiusInKm: 10.0, // 10km radius
+        limit: 5, // limit 5 merchants
+      );
+      
+      Logger.log("HOMEVM - Successfully fetched ${nearbyMerchants.length} recommended merchants");
+      state = AppState.success(nearbyMerchants);
+      
+    } catch (e) {
+      Logger.error("HOMEVM - Error fetching recommended merchants", error: e);
+      state = AppState.error(
+        Exception(e.toString()),
+        message: 'Failed to load recommended merchants'
+      );
     }
   }
 }

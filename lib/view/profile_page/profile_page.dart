@@ -39,7 +39,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
         child: Column(
           children: [
             Container(
-              height: 220,
+              height: 250,
               width: double.infinity,
               decoration: BoxDecoration(
                 color: MyColor.orange,
@@ -97,7 +97,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 7),
+                  const SizedBox(height: 10),
                   userState.maybeWhen(
                     success: (user) => user.isMerchant == true
                         ? Container(
@@ -255,7 +255,6 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                           );
                         },
                       ),
-                      const SizedBox(height: 20),
                       _buildMenuItem(
                         icon: Icons.logout,
                         title: "Keluar",
