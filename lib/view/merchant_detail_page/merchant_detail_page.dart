@@ -14,6 +14,7 @@ import 'package:temulapak_app/utils/logger.dart';
 import 'package:temulapak_app/view/merchant_detail_page/merchant_detail_viewmodel.dart';
 import 'package:temulapak_app/view/widget/live_tracking_map.dart';
 import 'package:temulapak_app/view/widget/location_update_indicator.dart';
+import 'package:flutter_svg/svg.dart';
 
 class MerchantDetailPage extends ConsumerStatefulWidget {
   final MerchantModel merchant;
@@ -511,7 +512,7 @@ class _MerchantDetailPageState extends ConsumerState<MerchantDetailPage> {
                         ),
                       ),
                       
-                      const SizedBox(width: 12),
+                      const SizedBox(width: 5),
 
                       // Google Maps Button - Sejajar dengan info card
                       if (hasLocation)
@@ -524,43 +525,52 @@ class _MerchantDetailPageState extends ConsumerState<MerchantDetailPage> {
                               merchant.merchantName,
                             ),
                             child: Container(
-                              padding: const EdgeInsets.all(12),
+                              padding: const EdgeInsets.fromLTRB(8, 12, 8, 12),
                               decoration: BoxDecoration(
                                 color: Colors.white,
                                 borderRadius: BorderRadius.circular(12),
                                 border: Border.all(color: MyColor.orange),
                               ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.center,
+                              child: Row(
                                 children: [
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Text(
-                                        "Buka di",
-                                        style: TextStyle(
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w600,
-                                          color: MyColor.blackPlain,
+                                  // Text Section - Left side
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                        Text(
+                                          "Buka di",
+                                          style: TextStyle(
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.w600,
+                                            color: MyColor.blackPlain,
+                                          ),
                                         ),
-                                      ),
-                                      const SizedBox(width: 4),
-                                      Icon(
-                                        Icons.map,
-                                        size: 16,
-                                        color: Colors.blue,
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    "Google Maps",
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: MyColor.orange,
-                                      fontWeight: FontWeight.w500,
+                                        Text(
+                                          "Google Maps",
+                                          style: TextStyle(
+                                            fontSize: 10,
+                                            color: MyColor.orange,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                      ],
                                     ),
-                                    textAlign: TextAlign.center,
+                                  ),
+                                  
+                                  // Icon Section - Right side
+                                  SizedBox(
+                                    width: 40,
+                                    height: 40,
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(6),
+                                      child: SvgPicture.asset(
+                                        "lib/assets/icons/pin_icon.svg",
+                                        width: 20,
+                                        height: 20,
+                                        fit: BoxFit.contain,
+                                      ),
+                                    ),
                                   ),
                                 ],
                               ),
