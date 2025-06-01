@@ -106,12 +106,13 @@ final addressViewModelProvider = AutoDisposeNotifierProvider<AddressViewModel,
 
 typedef _$AddressViewModel = AutoDisposeNotifier<AppState<String, Exception>>;
 String _$recommendedMerchantsHash() =>
-    r'04ab35d6a4d4293306ebe86beaca0cc70bb0c705';
+    r'27e9de77ca11af6bc9fd5a720eecf158cf0617ce';
 
 /// See also [RecommendedMerchants].
 @ProviderFor(RecommendedMerchants)
 final recommendedMerchantsProvider = AutoDisposeNotifierProvider<
-    RecommendedMerchants, AppState<List<MerchantModel>, Exception>>.internal(
+    RecommendedMerchants,
+    AppState<List<MerchantWithDistanceHome>, Exception>>.internal(
   RecommendedMerchants.new,
   name: r'recommendedMerchantsProvider',
   debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
@@ -122,6 +123,6 @@ final recommendedMerchantsProvider = AutoDisposeNotifierProvider<
 );
 
 typedef _$RecommendedMerchants
-    = AutoDisposeNotifier<AppState<List<MerchantModel>, Exception>>;
+    = AutoDisposeNotifier<AppState<List<MerchantWithDistanceHome>, Exception>>;
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package

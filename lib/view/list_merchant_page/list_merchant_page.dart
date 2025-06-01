@@ -1,8 +1,11 @@
+// File: lib/view/list_merchant_page/list_merchant_page.dart
+// VERIFIED: Fixed MerchantWidget constructor calls with proper parameters
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:temulapak_app/assets/mycolor.dart';
-import 'package:temulapak_app/model/merchant/merchant_model.dart';
+// import 'package:temulapak_app/model/merchant/merchant_model.dart';
 import 'package:temulapak_app/utils/logger.dart';
 import 'package:temulapak_app/view/list_merchant_page/list_merchant_viewmodel.dart';
 import 'package:temulapak_app/view/merchant_detail_page/merchant_detail_page.dart';
@@ -173,7 +176,7 @@ class _ListMerchantPageState extends ConsumerState<ListMerchantPage> {
     );
   }
 
-  Widget _buildMerchantList(List<MerchantModel> merchants) {
+  Widget _buildMerchantList(List<MerchantWithDistance> merchantsWithDistance) {
     final currentFilter = ref.watch(merchantFilterStateProvider);
     
     return Column(
@@ -187,7 +190,7 @@ class _ListMerchantPageState extends ConsumerState<ListMerchantPage> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                "${merchants.length} penjual ditemukan",
+                "${merchantsWithDistance.length} penjual ditemukan",
                 style: TextStyle(
                   fontSize: 14,
                   color: MyColor.blackPlain,
@@ -218,12 +221,16 @@ class _ListMerchantPageState extends ConsumerState<ListMerchantPage> {
         Expanded(
           child: ListView.builder(
             padding: const EdgeInsets.symmetric(horizontal: 20),
-            itemCount: merchants.length,
+            itemCount: merchantsWithDistance.length,
             itemBuilder: (context, index) {
-              final merchant = merchants[index];
+              final merchantWithDistance = merchantsWithDistance[index];
+              final merchant = merchantWithDistance.merchant;
+              final distance = merchantWithDistance.distance;
+              
               return MerchantWidget(
                 merchant: merchant,
                 onTap: () {
+                  Logger.log("Clicked on merchant: ${merchant.merchantName}");
                   Navigator.push(
                     context,
                     MaterialPageRoute(
@@ -231,6 +238,9 @@ class _ListMerchantPageState extends ConsumerState<ListMerchantPage> {
                     ),
                   );
                 },
+                // ENHANCED: Now passing real calculated distance
+                showFavoriteButton: true, // Show favorite button in list
+                distance: distance, // Real calculated distance from ViewModel
               );
             },
           ),

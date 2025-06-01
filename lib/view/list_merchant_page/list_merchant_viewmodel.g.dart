@@ -41,12 +41,13 @@ final locationServicesProvider = AutoDisposeProvider<LocationServices>.internal(
 // ignore: unused_element
 typedef LocationServicesRef = AutoDisposeProviderRef<LocationServices>;
 String _$listMerchantViewModelHash() =>
-    r'69bcd3776159e897d99a28360a7e577b29fe02f7';
+    r'a71e7dc77771a8557107884688ea8a49259cf8da';
 
 /// See also [ListMerchantViewModel].
 @ProviderFor(ListMerchantViewModel)
 final listMerchantViewModelProvider = AutoDisposeNotifierProvider<
-    ListMerchantViewModel, AppState<List<MerchantModel>, Exception>>.internal(
+    ListMerchantViewModel,
+    AppState<List<MerchantWithDistance>, Exception>>.internal(
   ListMerchantViewModel.new,
   name: r'listMerchantViewModelProvider',
   debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
@@ -57,7 +58,7 @@ final listMerchantViewModelProvider = AutoDisposeNotifierProvider<
 );
 
 typedef _$ListMerchantViewModel
-    = AutoDisposeNotifier<AppState<List<MerchantModel>, Exception>>;
+    = AutoDisposeNotifier<AppState<List<MerchantWithDistance>, Exception>>;
 String _$merchantFilterStateHash() =>
     r'b53f4ca77debb4476c103de43f039adc205759f2';
 

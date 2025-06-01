@@ -1,3 +1,8 @@
+// File: lib/view/list_merchant_page/list_merchant_viewmodel.dart
+// ENHANCED: Added distance calculation for merchant list
+
+import 'dart:math';
+import 'package:geolocator/geolocator.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:temulapak_app/data/location/location_services.dart';
 import 'package:temulapak_app/data/network/merchant_service.dart';
@@ -52,6 +57,27 @@ extension MerchantFilterExtension on MerchantFilter {
   }
 }
 
+// NEW: Enhanced MerchantWithDistance model
+class MerchantWithDistance {
+  final MerchantModel merchant;
+  final double? distance; // Distance in kilometers
+
+  MerchantWithDistance({
+    required this.merchant,
+    this.distance,
+  });
+
+  MerchantWithDistance copyWith({
+    MerchantModel? merchant,
+    double? distance,
+  }) {
+    return MerchantWithDistance(
+      merchant: merchant ?? this.merchant,
+      distance: distance ?? this.distance,
+    );
+  }
+}
+
 // Provider for MerchantService
 @riverpod
 MerchantService merchantService(ref) {
@@ -64,24 +90,29 @@ LocationServices locationServices(ref) {
   return LocationServices.instance;
 }
 
+// ENHANCED: ViewModel now returns MerchantWithDistance
 @riverpod
 class ListMerchantViewModel extends _$ListMerchantViewModel {
-  List<MerchantModel> _originalMerchants = [];
+  List<MerchantWithDistance> _originalMerchants = [];
+  Position? _userPosition;
   
   @override
-  AppState<List<MerchantModel>, Exception> build() {
+  AppState<List<MerchantWithDistance>, Exception> build() {
     return AppState.idle();
   }
 
-  /// Fetch merchants based on category
+  /// Fetch merchants based on category with distance calculation
   Future<void> fetchMerchants(MerchantCategory category) async {
     _updateState(AppState.loading());
     
     try {
       Logger.log("LISTVM - Fetching merchants for category: ${category.displayName}");
       
-      List<MerchantModel> merchants;
+      // Step 1: Get user location for distance calculation
+      await _getUserLocation();
       
+      // Step 2: Fetch merchants based on category
+      List<MerchantModel> merchants;
       switch (category) {
         case MerchantCategory.nearest:
           merchants = await _fetchNearestMerchants();
@@ -93,11 +124,24 @@ class ListMerchantViewModel extends _$ListMerchantViewModel {
           break;
       }
       
-      // Store original data for filtering
-      _originalMerchants = merchants;
+      // Step 3: Calculate distances and create MerchantWithDistance objects
+      List<MerchantWithDistance> merchantsWithDistance = await _calculateDistances(merchants);
       
-      Logger.log("LISTVM - Successfully fetched ${merchants.length} merchants");
-      _updateState(AppState.success(merchants));
+      // Step 4: Sort by distance if user location is available
+      if (_userPosition != null) {
+        merchantsWithDistance.sort((a, b) {
+          if (a.distance == null && b.distance == null) return 0;
+          if (a.distance == null) return 1;
+          if (b.distance == null) return -1;
+          return a.distance!.compareTo(b.distance!);
+        });
+      }
+      
+      // Store original data for filtering
+      _originalMerchants = merchantsWithDistance;
+      
+      Logger.log("LISTVM - Successfully fetched ${merchantsWithDistance.length} merchants with distances");
+      _updateState(AppState.success(merchantsWithDistance));
       
     } catch (e) {
       Logger.error("LISTVM - Error fetching merchants", error: e);
@@ -108,6 +152,79 @@ class ListMerchantViewModel extends _$ListMerchantViewModel {
     }
   }
 
+  /// Get user's current location for distance calculation
+  Future<void> _getUserLocation() async {
+    try {
+      Logger.log("LISTVM - Getting user location for distance calculation");
+      
+      final locationService = ref.read(locationServicesProvider);
+      _userPosition = await locationService.getCurrentLocation();
+      
+      if (_userPosition != null) {
+        Logger.log("LISTVM - User location obtained: ${_userPosition!.latitude}, ${_userPosition!.longitude}");
+      } else {
+        Logger.log("LISTVM - Could not get user location, distances will not be calculated");
+      }
+    } catch (e) {
+      Logger.error("LISTVM - Error getting user location", error: e);
+      _userPosition = null;
+    }
+  }
+
+  /// Calculate distances for all merchants
+  Future<List<MerchantWithDistance>> _calculateDistances(List<MerchantModel> merchants) async {
+    if (_userPosition == null) {
+      Logger.log("LISTVM - No user position, returning merchants without distances");
+      return merchants.map((m) => MerchantWithDistance(merchant: m, distance: null)).toList();
+    }
+
+    Logger.log("LISTVM - Calculating distances for ${merchants.length} merchants");
+    
+    List<MerchantWithDistance> result = [];
+    
+    for (final merchant in merchants) {
+      double? distance;
+      
+      if (merchant.merchantLocLat != null && merchant.merchantLocLong != null) {
+        distance = _calculateDistance(
+          _userPosition!.latitude,
+          _userPosition!.longitude,
+          merchant.merchantLocLat!,
+          merchant.merchantLocLong!,
+        );
+      }
+      
+      result.add(MerchantWithDistance(
+        merchant: merchant,
+        distance: distance,
+      ));
+    }
+    
+    Logger.log("LISTVM - Distance calculation completed");
+    return result;
+  }
+
+  /// Calculate distance between two points using Haversine formula
+  double _calculateDistance(double lat1, double lon1, double lat2, double lon2) {
+    const double earthRadius = 6371; // Earth radius in kilometers
+
+    double dLat = _degreesToRadians(lat2 - lat1);
+    double dLon = _degreesToRadians(lon2 - lon1);
+
+    double a = sin(dLat / 2) * sin(dLat / 2) +
+        cos(_degreesToRadians(lat1)) * cos(_degreesToRadians(lat2)) *
+        sin(dLon / 2) * sin(dLon / 2);
+    
+    double c = 2 * atan2(sqrt(a), sqrt(1 - a));
+    double distance = earthRadius * c;
+
+    return distance;
+  }
+
+  double _degreesToRadians(double degrees) {
+    return degrees * (pi / 180);
+  }
+
   /// Apply filter to current merchants
   void applyFilter(MerchantFilter filter) {
     if (_originalMerchants.isEmpty) {
@@ -115,17 +232,17 @@ class ListMerchantViewModel extends _$ListMerchantViewModel {
       return;
     }
     
-    List<MerchantModel> filteredMerchants;
+    List<MerchantWithDistance> filteredMerchants;
     
     switch (filter) {
       case MerchantFilter.all:
         filteredMerchants = _originalMerchants;
         break;
       case MerchantFilter.open:
-        filteredMerchants = _originalMerchants.where((m) => m.merchantStatus == true).toList();
+        filteredMerchants = _originalMerchants.where((m) => m.merchant.merchantStatus == true).toList();
         break;
       case MerchantFilter.closed:
-        filteredMerchants = _originalMerchants.where((m) => m.merchantStatus == false).toList();
+        filteredMerchants = _originalMerchants.where((m) => m.merchant.merchantStatus == false).toList();
         break;
     }
     
@@ -140,7 +257,7 @@ class ListMerchantViewModel extends _$ListMerchantViewModel {
   }
 
   /// Private method to update state safely
-  void _updateState(AppState<List<MerchantModel>, Exception> newState) {
+  void _updateState(AppState<List<MerchantWithDistance>, Exception> newState) {
     state = newState;
   }
 

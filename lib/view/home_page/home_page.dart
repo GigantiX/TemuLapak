@@ -1,3 +1,6 @@
+// File: lib/view/home_page/home_page.dart
+// FIXED: Updated to handle MerchantWithDistance from recommendations
+
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -27,7 +30,7 @@ class _HomePageState extends ConsumerState<HomePage> {
     Future.microtask(() {
       ref.read(homeViewmodelProvider.notifier).getUser();
       ref.read(addressViewModelProvider.notifier).getAddress();
-      // NEW: Fetch recommended merchants
+      // FIXED: Fetch recommended merchants with distance calculation
       ref.read(recommendedMerchantsProvider.notifier).getRecommendedMerchants();
     });
   }
@@ -50,7 +53,7 @@ class _HomePageState extends ConsumerState<HomePage> {
               homepageCarousel(ref),
               _homepageCategory(),
               const SizedBox(height: 10),
-              // NEW: Recommended Section
+              // FIXED: Recommended Section with distance support
               _buildRecommendedSection(recommendedState),
             ],
           ),
@@ -141,7 +144,7 @@ class _HomePageState extends ConsumerState<HomePage> {
   );
 }
 
-  // NEW: Build Recommended Section
+  // FIXED: Build Recommended Section with MerchantWithDistance support
   Widget _buildRecommendedSection(AppState recommendedState) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 25),
@@ -181,11 +184,11 @@ class _HomePageState extends ConsumerState<HomePage> {
           recommendedState.when(
             idle: () => _buildEmptyRecommended(),
             loading: () => _buildRecommendedShimmer(),
-            success: (merchants) {
-              if (merchants.isEmpty) {
+            success: (merchantsWithDistance) {
+              if (merchantsWithDistance.isEmpty) {
                 return _buildEmptyRecommended();
               }
-              return _buildRecommendedList(merchants);
+              return _buildRecommendedList(merchantsWithDistance);
             },
             error: (error, message) => _buildRecommendedError(message),
           ),
@@ -194,19 +197,27 @@ class _HomePageState extends ConsumerState<HomePage> {
     );
   }
 
-  Widget _buildRecommendedList(merchants) {
+  // FIXED: Handle MerchantWithDistanceHome instead of MerchantModel
+  Widget _buildRecommendedList(List<dynamic> merchantsWithDistance) {
     return Column(
-      children: merchants.map<Widget>((merchant) {
+      children: merchantsWithDistance.map<Widget>((merchantWithDistance) {
+        final merchant = merchantWithDistance.merchant;
+        final distance = merchantWithDistance.distance;
+        
         return MerchantWidget(
           merchant: merchant,
           onTap: () {
-  Navigator.push(
-    context,
-    MaterialPageRoute(
-      builder: (context) => MerchantDetailPage(merchant: merchant),
-    ),
-  );
-},
+            Logger.log("Clicked on recommended merchant: ${merchant.merchantName}");
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => MerchantDetailPage(merchant: merchant),
+              ),
+            );
+          },
+          // FIXED: Pass calculated distance to MerchantWidget
+          showFavoriteButton: true, 
+          distance: distance, // Now we have real calculated distance!
         );
       }).toList(),
     );

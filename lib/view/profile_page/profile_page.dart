@@ -303,7 +303,6 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                           );
                         },
                       ),
-                      const Spacer(),
                       Text(
                         "TemuLapak v1.0.0",
                         style: TextStyle(

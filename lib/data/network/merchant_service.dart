@@ -102,9 +102,19 @@ class MerchantService {
         'merchantImgUrl': imageUrl,
       };
 
+      // ⭐ STEP 1 NEW: Add merchantPopularity field initialization
       if (!isUpdate) {
         merchantData['merchantPopularity'] = 0;
+        Logger.log("MS - Initializing merchantPopularity to 0 for new merchant");
+      } else {
+        // For existing merchants being updated, ensure popularity field exists
+        final existingData = merchantDoc.data() as Map<String, dynamic>?;
+        if (existingData != null && !existingData.containsKey('merchantPopularity')) {
+          merchantData['merchantPopularity'] = 0;
+          Logger.log("MS - Adding missing merchantPopularity field to existing merchant");
+        }
       }
+      // ⭐ END STEP 1 NEW
 
       if (geoPoint != null) {
         merchantData['geoPoint'] = geoPoint.data;
@@ -145,8 +155,8 @@ class MerchantService {
           .update({'isMerchant': true, 'merchantId': merchantId});
 
       Logger.log(isUpdate
-          ? "Merchant profile updated successfully"
-          : "Merchant registration completed successfully");
+          ? "Merchant profile updated successfully (with popularity field check)"
+          : "Merchant registration completed successfully (with popularity field)");
     } catch (e) {
       Logger.error("Error in merchant registration/update: $e");
       rethrow;
