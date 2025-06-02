@@ -151,6 +151,7 @@ class _HomePageState extends ConsumerState<HomePage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // UPDATED: Header without "Lihat Semua" button as required
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -158,27 +159,8 @@ class _HomePageState extends ConsumerState<HomePage> {
                 "Rekomendasi",
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
               ),
-              TextButton(
-                onPressed: () {
-                  Logger.log("Clicked on Lihat Semua");
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => ListMerchantPage(
-                        category: MerchantCategory.nearest,
-                      ),
-                    ),
-                  );
-                },
-                child: Text(
-                  "Lihat Semua",
-                  style: TextStyle(
-                    color: MyColor.orange,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ),
+              // REMOVED: "Lihat Semua" button as per requirement
+              // TextButton was here - now removed
             ],
           ),
           recommendedState.when(
@@ -198,26 +180,33 @@ class _HomePageState extends ConsumerState<HomePage> {
   }
 
   // FIXED: Handle MerchantWithDistanceHome instead of MerchantModel
-  Widget _buildRecommendedList(List<dynamic> merchantsWithDistance) {
+  Widget _buildRecommendedList(List<MerchantWithDistanceHome> merchantsWithDistance) {
+    Logger.log("🏠 HOME_PAGE - Building recommended list with ${merchantsWithDistance.length} merchants");
+    
     return Column(
       children: merchantsWithDistance.map<Widget>((merchantWithDistance) {
         final merchant = merchantWithDistance.merchant;
         final distance = merchantWithDistance.distance;
         
-        return MerchantWidget(
-          merchant: merchant,
-          onTap: () {
-            Logger.log("Clicked on recommended merchant: ${merchant.merchantName}");
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => MerchantDetailPage(merchant: merchant),
-              ),
-            );
-          },
-          // FIXED: Pass calculated distance to MerchantWidget
-          showFavoriteButton: true, 
-          distance: distance, // Now we have real calculated distance!
+        Logger.log("🏪 HOME_PAGE - Displaying: ${merchant.merchantName} (${distance?.toStringAsFixed(2)}km, pop: ${merchant.merchantPopularity ?? 0})");
+        
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: MerchantWidget(
+            merchant: merchant,
+            onTap: () {
+              Logger.log("Clicked on recommended merchant: ${merchant.merchantName}");
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => MerchantDetailPage(merchant: merchant),
+                ),
+              );
+            },
+            // FIXED: Pass calculated distance to MerchantWidget
+            showFavoriteButton: true, 
+            distance: distance, // Now we have real calculated distance!
+          ),
         );
       }).toList(),
     );

@@ -6,6 +6,7 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:geoflutterfire_plus/geoflutterfire_plus.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:temulapak_app/data/network/user_service.dart';
+import 'package:temulapak_app/data/network/geo_merchant_service.dart'; // NEW IMPORT
 import 'package:temulapak_app/model/merchant/merchant_model.dart';
 import 'package:temulapak_app/model/product/product_model.dart';
 import 'package:temulapak_app/utils/logger.dart';
@@ -13,6 +14,9 @@ import 'package:temulapak_app/utils/logger.dart';
 class MerchantService {
   final userService = UserService();
   final FirebaseStorage _storage = FirebaseStorage.instance;
+  
+  // NEW: Geo service integration
+  final GeoMerchantService _geoService = GeoMerchantService.instance;
 
   // Collection name sesuai dengan Firebase actual
   final CollectionReference _merchantCollection =
@@ -102,7 +106,7 @@ class MerchantService {
         'merchantImgUrl': imageUrl,
       };
 
-      // ⭐ STEP 1 NEW: Add merchantPopularity field initialization
+      // ⭐ Initialize merchantPopularity field
       if (!isUpdate) {
         merchantData['merchantPopularity'] = 0;
         Logger.log("MS - Initializing merchantPopularity to 0 for new merchant");
@@ -114,7 +118,6 @@ class MerchantService {
           Logger.log("MS - Adding missing merchantPopularity field to existing merchant");
         }
       }
-      // ⭐ END STEP 1 NEW
 
       if (geoPoint != null) {
         merchantData['geoPoint'] = geoPoint.data;
@@ -163,12 +166,12 @@ class MerchantService {
     }
   }
 
-  // NEW METHODS FOR FETCHING DATA
+  // ENHANCED METHODS FOR FETCHING DATA WITH GEO SUPPORT
 
-  /// Fetch all merchants from Firebase
+  /// Fetch all merchants from Firebase (fallback method)
   Future<List<MerchantModel>> getAllMerchants() async {
     try {
-      Logger.log("MS - Fetching all merchants");
+      Logger.log("MS - Fetching all merchants (fallback method)");
       
       final querySnapshot = await _merchantCollection.get();
       List<MerchantModel> merchants = [];
@@ -207,15 +210,51 @@ class MerchantService {
     }
   }
 
-  /// Fetch merchants by specific category
-  Future<List<MerchantModel>> getMerchantsByCategory(String category) async {
+  /// ENHANCED: Fetch merchants by category with GEO support
+  Future<List<MerchantModel>> getMerchantsByCategory(
+    String category, {
+    double? userLatitude,
+    double? userLongitude,
+    double maxRadiusKm = 50.0,
+    int? limit,
+  }) async {
     try {
-      Logger.log("MS - Fetching merchants by category: $category");
+      Logger.log("MS - Fetching merchants by category: $category (GEO-enhanced)");
       
-      final querySnapshot = await _merchantCollection
-          .where('merchantCategory', arrayContains: category)
-          .get();
+      // TRY GEO-ENHANCED SEARCH FIRST
+      if (userLatitude != null && userLongitude != null) {
+        try {
+          Logger.log("MS - Attempting geo-enhanced category search");
           
+          final geoMerchants = await _geoService.getMerchantsByCategoryGeo(
+            category: category,
+            userLatitude: userLatitude,
+            userLongitude: userLongitude,
+            maxRadiusKm: maxRadiusKm,
+            limit: limit,
+          );
+          
+          if (geoMerchants.isNotEmpty) {
+            Logger.log("MS - Geo search successful, found ${geoMerchants.length} merchants");
+            return geoMerchants;
+          } else {
+            Logger.log("MS - Geo search returned empty, falling back to regular search");
+          }
+          
+        } catch (e) {
+          Logger.error("MS - Geo search failed, falling back to regular search", error: e);
+        }
+      }
+      
+      // FALLBACK TO REGULAR SEARCH
+      Logger.log("MS - Using regular category search");
+      
+      Query query = _merchantCollection.where('merchantCategory', arrayContains: category);
+      if (limit != null) {
+        query = query.limit(limit);
+      }
+      
+      final querySnapshot = await query.get();
       List<MerchantModel> merchants = [];
 
       for (var doc in querySnapshot.docs) {
@@ -251,18 +290,59 @@ class MerchantService {
     }
   }
 
-  /// Fetch nearby merchants based on user location
+  /// ENHANCED: Fetch nearby merchants with GEO support
   Future<List<MerchantModel>> getNearbyMerchants({
     required double latitude,
     required double longitude,
     double radiusInKm = 10.0,
     int limit = 5,
+    List<String>? categories,
+    bool? isOpen,
   }) async {
     try {
-      Logger.log("MS - Fetching nearby merchants within ${radiusInKm}km, limit: $limit");
+      Logger.log("MS - Fetching nearby merchants (GEO-enhanced): radius=${radiusInKm}km, limit=$limit");
       
-      // Get all merchants first (simple approach)
-      final allMerchants = await getAllMerchants();
+      // TRY GEO-ENHANCED SEARCH FIRST
+      try {
+        Logger.log("MS - Attempting geo query");
+        
+        final geoMerchants = await _geoService.getNearbyMerchantsGeo(
+          latitude: latitude,
+          longitude: longitude,
+          radiusInKm: radiusInKm,
+          limit: limit,
+          categories: categories,
+          isOpen: isOpen,
+        );
+        
+        if (geoMerchants.isNotEmpty) {
+          Logger.log("MS - Geo query successful, found ${geoMerchants.length} nearby merchants");
+          return geoMerchants;
+        } else {
+          Logger.log("MS - Geo query returned empty, falling back to Haversine calculation");
+        }
+        
+      } catch (e) {
+        Logger.error("MS - Geo query failed, falling back to Haversine calculation", error: e);
+      }
+      
+      // FALLBACK TO HAVERSINE CALCULATION
+      Logger.log("MS - Using Haversine fallback method");
+      
+      // Get all merchants first (or apply basic filters)
+      Query query = _merchantCollection;
+      
+      // Apply status filter if specified
+      if (isOpen != null) {
+        query = query.where('merchantStatus', isEqualTo: isOpen);
+      }
+      
+      // Apply category filter if specified
+      if (categories != null && categories.isNotEmpty) {
+        query = query.where('merchantCategory', arrayContainsAny: categories);
+      }
+      
+      final allMerchants = await _fetchMerchantsFromQuery(query);
       
       List<Map<String, dynamic>> merchantsWithDistance = [];
       
@@ -298,13 +378,45 @@ class MerchantService {
           .map((item) => item['merchant'] as MerchantModel)
           .toList();
 
-      Logger.log("MS - Found ${nearbyMerchants.length} nearby merchants");
+      Logger.log("MS - Haversine calculation found ${nearbyMerchants.length} nearby merchants");
       return nearbyMerchants;
       
     } catch (e) {
       Logger.error("MS - Error fetching nearby merchants", error: e);
       throw Exception("Failed to fetch nearby merchants: $e");
     }
+  }
+
+  /// Helper method to fetch merchants from a query
+  Future<List<MerchantModel>> _fetchMerchantsFromQuery(Query query) async {
+    final querySnapshot = await query.get();
+    List<MerchantModel> merchants = [];
+
+    for (var doc in querySnapshot.docs) {
+      try {
+        final data = doc.data() as Map<String, dynamic>;
+        
+        // Fetch products subcollection
+        final productsSnapshot = await doc.reference.collection('products').get();
+        List<Product> products = [];
+        
+        for (var productDoc in productsSnapshot.docs) {
+          final productData = productDoc.data();
+          products.add(Product.fromMap(productData));
+        }
+        
+        data['products'] = products.map((p) => p.toMap()).toList();
+        
+        final merchant = MerchantModel.fromMap(data);
+        merchants.add(merchant);
+        
+      } catch (e) {
+        Logger.error("Error parsing merchant document ${doc.id}", error: e);
+        continue;
+      }
+    }
+
+    return merchants;
   }
 
   /// Calculate distance between two points using Haversine formula
@@ -326,5 +438,21 @@ class MerchantService {
 
   double _degreesToRadians(double degrees) {
     return degrees * (pi / 180);
+  }
+
+  /// NEW: Test geo functionality
+  Future<bool> testGeoFunctionality() async {
+    try {
+      Logger.log("MS - Testing geo functionality");
+      return await _geoService.testGeoFunctionality();
+    } catch (e) {
+      Logger.error("MS - Geo test failed", error: e);
+      return false;
+    }
+  }
+
+  /// NEW: Get geo service status
+  Map<String, dynamic> getGeoServiceStatus() {
+    return _geoService.getServiceStats();
   }
 }

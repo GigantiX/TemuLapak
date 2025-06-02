@@ -40,8 +40,27 @@ final locationServicesProvider = AutoDisposeProvider<LocationServices>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef LocationServicesRef = AutoDisposeProviderRef<LocationServices>;
+String _$geoMerchantServiceHash() =>
+    r'b27df5734c0eb80e0409621800b940b4a89e9e73';
+
+/// See also [geoMerchantService].
+@ProviderFor(geoMerchantService)
+final geoMerchantServiceProvider =
+    AutoDisposeProvider<GeoMerchantService>.internal(
+  geoMerchantService,
+  name: r'geoMerchantServiceProvider',
+  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+      ? null
+      : _$geoMerchantServiceHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef GeoMerchantServiceRef = AutoDisposeProviderRef<GeoMerchantService>;
 String _$listMerchantViewModelHash() =>
-    r'a71e7dc77771a8557107884688ea8a49259cf8da';
+    r'cfde07a92e9e1d4790d090c0a827d9d348652ff8';
 
 /// See also [ListMerchantViewModel].
 @ProviderFor(ListMerchantViewModel)

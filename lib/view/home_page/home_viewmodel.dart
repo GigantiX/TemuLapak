@@ -4,6 +4,7 @@ import 'package:temulapak_app/data/location/geocoding_service.dart';
 import 'package:temulapak_app/data/location/location_services.dart';
 import 'package:temulapak_app/data/network/user_service.dart';
 import 'package:temulapak_app/data/network/merchant_service.dart';
+import 'package:temulapak_app/data/network/geo_merchant_service.dart';
 import 'package:temulapak_app/model/state/app_state.dart';
 import 'package:temulapak_app/model/merchant/merchant_model.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -33,6 +34,11 @@ GeocodingService geocodingService(Ref ref) {
 @riverpod
 MerchantService merchantService(Ref ref) {
   return MerchantService();
+}
+
+@riverpod
+GeoMerchantService geoMerchantService(Ref ref) {
+  return GeoMerchantService.instance;
 }
 
 @riverpod
@@ -106,48 +112,77 @@ class AddressViewModel extends _$AddressViewModel {
   }
 }
 
-// NEW: Add MerchantWithDistance class directly in home_viewmodel.dart to avoid import issues
+// MerchantWithDistance class with geo enhancement info
 class MerchantWithDistanceHome {
   final MerchantModel merchant;
   final double? distance; // Distance in kilometers
+  final bool isGeoEnhanced; // Track if result came from geo query
 
   MerchantWithDistanceHome({
     required this.merchant,
     this.distance,
+    this.isGeoEnhanced = false,
   });
 
   MerchantWithDistanceHome copyWith({
     MerchantModel? merchant,
     double? distance,
+    bool? isGeoEnhanced,
   }) {
     return MerchantWithDistanceHome(
       merchant: merchant ?? this.merchant,
       distance: distance ?? this.distance,
+      isGeoEnhanced: isGeoEnhanced ?? this.isGeoEnhanced,
     );
   }
 }
 
-// FIXED: RecommendedMerchants now returns MerchantWithDistanceHome instead of importing from list_merchant_viewmodel
+// RecommendedMerchants with GeoFlutterFire Plus integration
 @riverpod
 class RecommendedMerchants extends _$RecommendedMerchants {
   Position? _userPosition;
+  bool _geoServiceInitialized = false;
   
   @override
   AppState<List<MerchantWithDistanceHome>, Exception> build() {
     return AppState.idle();
   }
 
+  /// Initialize geo service for recommendations
+  Future<void> _initializeGeoService() async {
+    if (_geoServiceInitialized) return;
+    
+    try {
+      Logger.log("HOMEVM_GEO - Initializing geo service for recommendations");
+      final geoService = ref.read(geoMerchantServiceProvider);
+      _geoServiceInitialized = await geoService.initialize();
+      
+      if (_geoServiceInitialized) {
+        Logger.log("HOMEVM_GEO - Geo service initialized successfully for recommendations");
+      } else {
+        Logger.log("HOMEVM_GEO - Geo service initialization failed, will use fallback");
+      }
+    } catch (e) {
+      Logger.error("HOMEVM_GEO - Error initializing geo service", error: e);
+      _geoServiceInitialized = false;
+    }
+  }
+
   Future<void> getRecommendedMerchants() async {
     state = AppState.loading();
     try {
-      Logger.log("HOMEVM - Fetching recommended merchants with distance calculation");
+      Logger.log("🚀 HOMEVM_GEO - Starting recommendation fetch");
       
-      // Get current location first
+      // STEP 1: Initialize geo service
+      await _initializeGeoService();
+      Logger.log("📡 HOMEVM_GEO - Geo service initialized: $_geoServiceInitialized");
+      
+      // STEP 2: Get current location first
       final locationService = ref.read(locationServicesProvider);
       final position = await locationService.getCurrentLocation();
       
       if (position == null) {
-        Logger.error("No location available for recommendations");
+        Logger.error("❌ HOMEVM_GEO - No location available for recommendations");
         state = AppState.error(
           Exception('Location not available'),
           message: 'Cannot get recommendations without location'
@@ -156,35 +191,163 @@ class RecommendedMerchants extends _$RecommendedMerchants {
       }
       
       _userPosition = position;
-      Logger.log("HOMEVM - User location: ${position.latitude}, ${position.longitude}");
+      Logger.log("📍 HOMEVM_GEO - User location: ${position.latitude.toStringAsFixed(6)}, ${position.longitude.toStringAsFixed(6)}");
       
-      // Get nearby merchants
+      // STEP 3: Get nearby merchants with detailed logging
       final merchantService = ref.read(merchantServiceProvider);
-      final nearbyMerchants = await merchantService.getNearbyMerchants(
-        latitude: position.latitude,
-        longitude: position.longitude,
-        radiusInKm: 10.0, // 10km radius
-        limit: 5, // limit 5 merchants
-      );
+      bool isGeoEnhanced = false;
+      List<MerchantModel> nearbyMerchants;
       
-      Logger.log("HOMEVM - Fetched ${nearbyMerchants.length} nearby merchants");
+      try {
+        Logger.log("🔍 HOMEVM_GEO - Searching merchants within 20km radius");
+        
+        nearbyMerchants = await merchantService.getNearbyMerchants(
+          latitude: position.latitude,
+          longitude: position.longitude,
+          radiusInKm: 20.0, // 20km radius
+          limit: 15, // Get more to have options for sorting
+        );
+        
+        isGeoEnhanced = _geoServiceInitialized && nearbyMerchants.isNotEmpty;
+        
+        Logger.log("📊 HOMEVM_GEO - Raw search result: ${nearbyMerchants.length} merchants found (geo: $isGeoEnhanced)");
+        
+        // DEBUG: Log each found merchant
+        for (int i = 0; i < nearbyMerchants.length; i++) {
+          final merchant = nearbyMerchants[i];
+          Logger.log("   🏪 [$i] ${merchant.merchantName} - Status: ${merchant.merchantStatus ? 'OPEN' : 'CLOSED'} - Popularity: ${merchant.merchantPopularity ?? 0}");
+          Logger.log("       📍 Location: ${merchant.merchantLocLat}, ${merchant.merchantLocLong}");
+        }
+        
+        if (nearbyMerchants.isEmpty) {
+          Logger.log("⚠️ HOMEVM_GEO - No merchants found within 20km, trying larger radius for debug");
+          
+          // DEBUG: Try larger radius to see if merchants exist
+          final debugMerchants = await merchantService.getNearbyMerchants(
+            latitude: position.latitude,
+            longitude: position.longitude,
+            radiusInKm: 50.0, // Larger radius for debug
+            limit: 50,
+          );
+          
+          Logger.log("🔍 DEBUG - Found ${debugMerchants.length} merchants within 50km");
+          for (final merchant in debugMerchants) {
+            if (merchant.merchantLocLat != null && merchant.merchantLocLong != null) {
+              final distance = _calculateDistance(
+                position.latitude,
+                position.longitude,
+                merchant.merchantLocLat!,
+                merchant.merchantLocLong!,
+              );
+              Logger.log("   🏪 DEBUG - ${merchant.merchantName}: ${distance.toStringAsFixed(2)}km, popularity: ${merchant.merchantPopularity ?? 0}");
+            }
+          }
+        }
+        
+      } catch (e) {
+        Logger.error("❌ HOMEVM_GEO - Error in merchant search", error: e);
+        
+        // Fallback: Try basic search
+        Logger.log("🔄 HOMEVM_GEO - Trying fallback search");
+        nearbyMerchants = await merchantService.getNearbyMerchants(
+          latitude: position.latitude,
+          longitude: position.longitude,
+          radiusInKm: 20.0,
+          limit: 15,
+        );
+        isGeoEnhanced = false;
+        Logger.log("📊 HOMEVM_GEO - Fallback result: ${nearbyMerchants.length} merchants");
+      }
       
-      // FIXED: Calculate distances like in ListMerchantViewModel
-      List<MerchantWithDistanceHome> merchantsWithDistance = await _calculateDistances(nearbyMerchants);
+      // STEP 4: Calculate distances with detailed logging
+      Logger.log("📏 HOMEVM_GEO - Calculating distances for ${nearbyMerchants.length} merchants");
       
-      // Sort by distance
+      List<MerchantWithDistanceHome> merchantsWithDistance = [];
+      
+      for (final merchant in nearbyMerchants) {
+        double? distance;
+        
+        if (merchant.merchantLocLat != null && merchant.merchantLocLong != null) {
+          distance = _calculateDistance(
+            _userPosition!.latitude,
+            _userPosition!.longitude,
+            merchant.merchantLocLat!,
+            merchant.merchantLocLong!,
+          );
+          
+          Logger.log("📏 Distance calc - ${merchant.merchantName}: ${distance.toStringAsFixed(2)}km");
+        } else {
+          Logger.log("⚠️ No location data for ${merchant.merchantName}");
+        }
+        
+        merchantsWithDistance.add(MerchantWithDistanceHome(
+          merchant: merchant,
+          distance: distance,
+          isGeoEnhanced: isGeoEnhanced,
+        ));
+      }
+      
+      // STEP 5: PROPER SORTING with detailed logging
+      Logger.log("🔄 HOMEVM_GEO - Sorting ${merchantsWithDistance.length} merchants by popularity DESC + distance ASC");
+      
+      // Log before sorting
+      Logger.log("📊 Before sorting:");
+      for (int i = 0; i < merchantsWithDistance.length; i++) {
+        final m = merchantsWithDistance[i];
+        Logger.log("   [$i] ${m.merchant.merchantName} - Pop: ${m.merchant.merchantPopularity ?? 0}, Dist: ${m.distance?.toStringAsFixed(2)}km");
+      }
+      
       merchantsWithDistance.sort((a, b) {
+        // Primary sort: merchantPopularity DESC (higher popularity first)
+        final popularityA = a.merchant.merchantPopularity ?? 0;
+        final popularityB = b.merchant.merchantPopularity ?? 0;
+        
+        if (popularityA != popularityB) {
+          // Higher popularity wins
+          Logger.log("🔄 Sorting by popularity: ${a.merchant.merchantName}($popularityA) vs ${b.merchant.merchantName}($popularityB) -> ${popularityB.compareTo(popularityA)}");
+          return popularityB.compareTo(popularityA); // DESC
+        }
+        
+        // Secondary sort: distance ASC (closer distance first) when popularity is same
         if (a.distance == null && b.distance == null) return 0;
         if (a.distance == null) return 1;
         if (b.distance == null) return -1;
-        return a.distance!.compareTo(b.distance!);
+        
+        Logger.log("🔄 Sorting by distance: ${a.merchant.merchantName}(${a.distance?.toStringAsFixed(2)}km) vs ${b.merchant.merchantName}(${b.distance?.toStringAsFixed(2)}km)");
+        return a.distance!.compareTo(b.distance!); // ASC
       });
       
-      Logger.log("HOMEVM - Successfully calculated distances for ${merchantsWithDistance.length} recommended merchants");
-      state = AppState.success(merchantsWithDistance);
+      // Log after sorting
+      Logger.log("📊 After sorting:");
+      for (int i = 0; i < merchantsWithDistance.length; i++) {
+        final m = merchantsWithDistance[i];
+        Logger.log("   [$i] ${m.merchant.merchantName} - Pop: ${m.merchant.merchantPopularity ?? 0}, Dist: ${m.distance?.toStringAsFixed(2)}km");
+      }
+      
+      // STEP 6: Take only top 5 merchants for recommendations
+      final recommendations = merchantsWithDistance.take(5).toList();
+      
+      Logger.log("✅ HOMEVM_GEO - Final recommendations (${recommendations.length}/5):");
+      for (int i = 0; i < recommendations.length; i++) {
+        final rec = recommendations[i];
+        Logger.log("   ${i + 1}. ${rec.merchant.merchantName}");
+        Logger.log("      📊 Popularity: ${rec.merchant.merchantPopularity ?? 0}");
+        Logger.log("      📏 Distance: ${rec.distance?.toStringAsFixed(2)}km");
+        Logger.log("      🟢 Status: ${rec.merchant.merchantStatus ? 'OPEN' : 'CLOSED'}");
+      }
+      
+      if (recommendations.isEmpty) {
+        Logger.log("❌ HOMEVM_GEO - No recommendations found! Check:");
+        Logger.log("   1. Are merchants within 20km radius?");
+        Logger.log("   2. Do merchants have location data?");
+        Logger.log("   3. Is user location accurate?");
+        Logger.log("   4. Are there any merchants in database?");
+      }
+      
+      state = AppState.success(recommendations);
       
     } catch (e) {
-      Logger.error("HOMEVM - Error fetching recommended merchants", error: e);
+      Logger.error("❌ HOMEVM_GEO - Error fetching recommended merchants", error: e);
       state = AppState.error(
         Exception(e.toString()),
         message: 'Failed to load recommended merchants'
@@ -192,40 +355,7 @@ class RecommendedMerchants extends _$RecommendedMerchants {
     }
   }
 
-  // FIXED: Add distance calculation method (copied from ListMerchantViewModel)
-  Future<List<MerchantWithDistanceHome>> _calculateDistances(List<MerchantModel> merchants) async {
-    if (_userPosition == null) {
-      Logger.log("HOMEVM - No user position, returning merchants without distances");
-      return merchants.map((m) => MerchantWithDistanceHome(merchant: m, distance: null)).toList();
-    }
-
-    Logger.log("HOMEVM - Calculating distances for ${merchants.length} merchants");
-    
-    List<MerchantWithDistanceHome> result = [];
-    
-    for (final merchant in merchants) {
-      double? distance;
-      
-      if (merchant.merchantLocLat != null && merchant.merchantLocLong != null) {
-        distance = _calculateDistance(
-          _userPosition!.latitude,
-          _userPosition!.longitude,
-          merchant.merchantLocLat!,
-          merchant.merchantLocLong!,
-        );
-      }
-      
-      result.add(MerchantWithDistanceHome(
-        merchant: merchant,
-        distance: distance,
-      ));
-    }
-    
-    Logger.log("HOMEVM - Distance calculation completed for recommendations");
-    return result;
-  }
-
-  // FIXED: Add distance calculation helper method (copied from ListMerchantViewModel)
+  /// Calculate distance between two points using Haversine formula
   double _calculateDistance(double lat1, double lon1, double lat2, double lon2) {
     const double earthRadius = 6371; // Earth radius in kilometers
 
@@ -244,5 +374,37 @@ class RecommendedMerchants extends _$RecommendedMerchants {
 
   double _degreesToRadians(double degrees) {
     return degrees * (pi / 180);
+  }
+
+  /// Test geo functionality for recommendations
+  Future<bool> testGeoFunctionality() async {
+    try {
+      Logger.log("HOMEVM_GEO - Testing geo functionality for recommendations");
+      
+      await _initializeGeoService();
+      if (!_geoServiceInitialized) {
+        Logger.log("HOMEVM_GEO - Geo service not initialized");
+        return false;
+      }
+      
+      final merchantService = ref.read(merchantServiceProvider);
+      return await merchantService.testGeoFunctionality();
+      
+    } catch (e) {
+      Logger.error("HOMEVM_GEO - Geo test failed", error: e);
+      return false;
+    }
+  }
+
+  /// Get geo service status for recommendations
+  Map<String, dynamic> getGeoServiceStatus() {
+    final merchantService = ref.read(merchantServiceProvider);
+    final status = merchantService.getGeoServiceStatus();
+    status['recommendationsInitialized'] = _geoServiceInitialized;
+    status['userPosition'] = _userPosition != null ? {
+      'latitude': _userPosition!.latitude,
+      'longitude': _userPosition!.longitude,
+    } : null;
+    return status;
   }
 }

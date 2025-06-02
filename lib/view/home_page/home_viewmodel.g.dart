@@ -73,6 +73,25 @@ final merchantServiceProvider = AutoDisposeProvider<MerchantService>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef MerchantServiceRef = AutoDisposeProviderRef<MerchantService>;
+String _$geoMerchantServiceHash() =>
+    r'b6809483afc8c33a2e6e738677e54506be93ff22';
+
+/// See also [geoMerchantService].
+@ProviderFor(geoMerchantService)
+final geoMerchantServiceProvider =
+    AutoDisposeProvider<GeoMerchantService>.internal(
+  geoMerchantService,
+  name: r'geoMerchantServiceProvider',
+  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+      ? null
+      : _$geoMerchantServiceHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef GeoMerchantServiceRef = AutoDisposeProviderRef<GeoMerchantService>;
 String _$homeViewmodelHash() => r'7b2f50f1038bb192faf8115282936d4dcc9ae8dc';
 
 /// See also [HomeViewmodel].
@@ -106,7 +125,7 @@ final addressViewModelProvider = AutoDisposeNotifierProvider<AddressViewModel,
 
 typedef _$AddressViewModel = AutoDisposeNotifier<AppState<String, Exception>>;
 String _$recommendedMerchantsHash() =>
-    r'27e9de77ca11af6bc9fd5a720eecf158cf0617ce';
+    r'1a193c7ac3855e4f347ba3cf80f6fcd66f6e472c';
 
 /// See also [RecommendedMerchants].
 @ProviderFor(RecommendedMerchants)
