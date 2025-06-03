@@ -33,22 +33,27 @@ class ChatService {
           throw Exception("User data not found");
         }
         
+        // FIXED: Ensure proper participant details structure
+        final participantDetails = <String, ParticipantDetail>{
+          userId: ParticipantDetail(
+            name: user.displayName ?? 'User',
+            avatar: user.photoURL,
+            role: 'user',
+          ),
+          merchantId: ParticipantDetail(
+            name: merchant.merchantName ?? 'Merchant',
+            avatar: merchant.merchantImgUrl,
+            role: 'merchant',
+          ),
+        };
+        
+        Logger.log("CHAT_SERVICE - Creating participant details: $participantDetails");
+        
         // Create new conversation
         final conversation = ConversationModel(
           id: conversationId,
           participants: [userId, merchantId],
-          participantDetails: {
-            userId: ParticipantDetail(
-              name: user.displayName ?? 'User',
-              avatar: user.photoURL,
-              role: 'user',
-            ),
-            merchantId: ParticipantDetail(
-              name: merchant.merchantName ?? 'Merchant',
-              avatar: merchant.merchantImgUrl,
-              role: 'merchant',
-            ),
-          },
+          participantDetails: participantDetails,
           createdAt: DateTime.now(),
           updatedAt: DateTime.now(),
           merchantId: merchantId,
@@ -56,10 +61,47 @@ class ChatService {
           lastMessage: null,
         );
         
-        await docRef.set(conversation.toMap());
+        final conversationData = conversation.toMap();
+        Logger.log("CHAT_SERVICE - Conversation data to save: $conversationData");
+        
+        await docRef.set(conversationData);
         Logger.log("CHAT_SERVICE - Created new conversation: $conversationId");
       } else {
         Logger.log("CHAT_SERVICE - Conversation already exists: $conversationId");
+        
+        // FIXED: Verify and update participant details if needed
+        final existingData = doc.data()!;
+        final existingParticipantDetails = existingData['participantDetails'] as Map<String, dynamic>?;
+        
+        if (existingParticipantDetails == null || 
+            !existingParticipantDetails.containsKey(userId) ||
+            !existingParticipantDetails.containsKey(merchantId)) {
+          
+          Logger.log("CHAT_SERVICE - Updating missing participant details for existing conversation");
+          
+          // Get user data for update
+          final user = await _userService.getCurrentUser();
+          
+          final updatedParticipantDetails = <String, dynamic>{
+            ...?existingParticipantDetails,
+            userId: {
+              'name': user?.displayName ?? 'User',
+              'avatar': user?.photoURL,
+              'role': 'user',
+            },
+            merchantId: {
+              'name': merchant.merchantName ?? 'Merchant',
+              'avatar': merchant.merchantImgUrl,
+              'role': 'merchant',
+            },
+          };
+          
+          await docRef.update({
+            'participantDetails': updatedParticipantDetails,
+          });
+          
+          Logger.log("CHAT_SERVICE - Updated participant details for existing conversation");
+        }
       }
       
       return conversationId;
@@ -69,30 +111,32 @@ class ChatService {
     }
   }
 
-  /// FIXED: Simplified user conversations query - removed role filter to avoid complex index
+  /// Get conversations where user is participant as USER
   Stream<List<ConversationModel>> getUserConversations(String userId) {
     Logger.log("CHAT_SERVICE - Getting user conversations for: $userId");
     
+    // FIXED: Simplified query to avoid complex composite index
+    // We'll filter by participants array and then filter by role in the stream map
     return _firestore
         .collection('conversations')
         .where('participants', arrayContains: userId)
+        .orderBy('updatedAt', descending: true)
         .snapshots()
         .map((snapshot) {
       Logger.log("CHAT_SERVICE - User conversations snapshot: ${snapshot.docs.length} conversations");
       
-      final conversations = snapshot.docs
+      return snapshot.docs
           .map((doc) {
             try {
               final conversation = ConversationModel.fromMap(doc.data());
               
-              // FIXED: Filter by role in-memory instead of in query
-              final userRole = conversation.participantDetails[userId]?.role;
-              
-              // Only include conversations where current user has 'user' role
-              if (userRole == 'user') {
+              // FIXED: Filter by role after fetching - check if user is participating as 'user' role
+              final userDetail = conversation.participantDetails[userId];
+              if (userDetail != null && userDetail.role == 'user') {
                 return conversation;
               }
-              return null;
+              return null; // Skip this conversation if user is not participating as 'user'
+              
             } catch (e) {
               Logger.error("CHAT_SERVICE - Error parsing conversation ${doc.id}", error: e);
               return null;
@@ -101,31 +145,22 @@ class ChatService {
           .where((conversation) => conversation != null)
           .cast<ConversationModel>()
           .toList();
-      
-      // FIXED: Sort in-memory by updatedAt descending
-      conversations.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
-      
-      Logger.log("CHAT_SERVICE - Filtered user conversations: ${conversations.length}");
-      return conversations;
-    }).handleError((error) {
-      Logger.error("CHAT_SERVICE - User conversations stream error", error: error);
-      // Return empty list instead of throwing error
-      return <ConversationModel>[];
     });
   }
 
-  /// FIXED: Simplified merchant conversations query - removed orderBy to avoid complex index
+  /// Get conversations where user is participant as MERCHANT
   Stream<List<ConversationModel>> getMerchantConversations(String merchantId) {
     Logger.log("CHAT_SERVICE - Getting merchant conversations for: $merchantId");
     
     return _firestore
         .collection('conversations')
         .where('merchantId', isEqualTo: merchantId)
+        .orderBy('updatedAt', descending: true)
         .snapshots()
         .map((snapshot) {
       Logger.log("CHAT_SERVICE - Merchant conversations snapshot: ${snapshot.docs.length} conversations");
       
-      final conversations = snapshot.docs
+      return snapshot.docs
           .map((doc) {
             try {
               return ConversationModel.fromMap(doc.data());
@@ -137,16 +172,6 @@ class ChatService {
           .where((conversation) => conversation != null)
           .cast<ConversationModel>()
           .toList();
-      
-      // FIXED: Sort in-memory by updatedAt descending
-      conversations.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
-      
-      Logger.log("CHAT_SERVICE - Sorted merchant conversations: ${conversations.length}");
-      return conversations;
-    }).handleError((error) {
-      Logger.error("CHAT_SERVICE - Merchant conversations stream error", error: error);
-      // Return empty list instead of throwing error
-      return <ConversationModel>[];
     });
   }
 
@@ -168,9 +193,6 @@ class ChatService {
         }
       }
       return null;
-    }).handleError((error) {
-      Logger.error("CHAT_SERVICE - Conversation stream error", error: error);
-      return null;
     });
   }
 
@@ -191,7 +213,7 @@ class ChatService {
       final messageId = _firestore.collection('temp').doc().id;
       final timestamp = DateTime.now();
       
-      Logger.log("CHAT_SERVICE - Sending message: $messageId");
+      Logger.log("CHAT_SERVICE - Sending message: $messageId from $senderId");
       
       // Create message
       final message = MessageModel(
@@ -203,6 +225,10 @@ class ChatService {
         readBy: [senderId], // Sender has read it
         isEdited: false,
       );
+      
+      // Get receiver ID first
+      final receiverId = await _getReceiverId(conversationId, senderId);
+      Logger.log("CHAT_SERVICE - Receiver ID: $receiverId");
       
       // Batch write for atomicity
       final batch = _firestore.batch();
@@ -218,9 +244,6 @@ class ChatService {
       // 2. Update conversation
       final conversationRef = _firestore.collection('conversations').doc(conversationId);
       
-      // Get receiver ID
-      final receiverId = await _getReceiverId(conversationId, senderId);
-      
       batch.update(conversationRef, {
         'lastMessage': {
           'text': text.trim(),
@@ -229,12 +252,14 @@ class ChatService {
           'type': 'text',
         },
         'updatedAt': timestamp.toIso8601String(),
-        // Increment unread count for receiver
+        // FIXED: Increment unread count for receiver only
         'unreadCount.$receiverId': FieldValue.increment(1),
+        // FIXED: Reset unread count for sender to 0 (they just sent a message)
+        'unreadCount.$senderId': 0,
       });
       
       await batch.commit();
-      Logger.log("CHAT_SERVICE - Message sent successfully");
+      Logger.log("CHAT_SERVICE - Message sent successfully, unread updated for $receiverId");
       
     } catch (e) {
       Logger.error("CHAT_SERVICE - Error sending message", error: e);
@@ -268,25 +293,78 @@ class ChatService {
           .where((message) => message != null)
           .cast<MessageModel>()
           .toList();
-    }).handleError((error) {
-      Logger.error("CHAT_SERVICE - Messages stream error", error: error);
-      return <MessageModel>[];
     });
   }
 
-  /// Mark messages as read
+  /// FIXED: Mark messages as read with proper participant detection
   Future<void> markAsRead(String conversationId, String userId) async {
     try {
       Logger.log("CHAT_SERVICE - Marking as read: $conversationId for $userId");
       
+      // FIXED: Get conversation first to determine correct user ID
+      final conversationDoc = await _firestore
+          .collection('conversations')
+          .doc(conversationId)
+          .get();
+      
+      if (!conversationDoc.exists) {
+        Logger.error("CHAT_SERVICE - Conversation not found: $conversationId");
+        return;
+      }
+      
+      final conversationData = conversationDoc.data()!;
+      final participants = List<String>.from(conversationData['participants'] ?? []);
+      
+      // FIXED: Determine the correct participant ID to reset unread count
+      String? participantToUpdate;
+      
+      // Check if userId is directly in participants (for users)
+      if (participants.contains(userId)) {
+        participantToUpdate = userId;
+        Logger.log("CHAT_SERVICE - Direct participant match: $userId");
+      } else {
+        // For merchants, find the merchant ID in participants
+        for (final participant in participants) {
+          if (participant.startsWith('MRCN_') && participant.contains(userId.replaceFirst('MRCN_', ''))) {
+            participantToUpdate = participant;
+            Logger.log("CHAT_SERVICE - Merchant participant match: $participant for $userId");
+            break;
+          }
+        }
+        
+        // If still not found, try exact match with MRCN_ prefix
+        if (participantToUpdate == null && !userId.startsWith('MRCN_')) {
+          final merchantId = "MRCN_$userId";
+          if (participants.contains(merchantId)) {
+            participantToUpdate = merchantId;
+            Logger.log("CHAT_SERVICE - Constructed merchant ID match: $merchantId");
+          }
+        }
+        
+        // Last resort: use userId as is if it starts with MRCN_
+        if (participantToUpdate == null && userId.startsWith('MRCN_')) {
+          if (participants.contains(userId)) {
+            participantToUpdate = userId;
+            Logger.log("CHAT_SERVICE - Direct MRCN_ match: $userId");
+          }
+        }
+      }
+      
+      if (participantToUpdate == null) {
+        Logger.error("CHAT_SERVICE - Could not determine participant to update for $userId in $participants");
+        return;
+      }
+      
+      // FIXED: Update unread count for correct participant
       await _firestore
           .collection('conversations')
           .doc(conversationId)
           .update({
-        'unreadCount.$userId': 0,
+        'unreadCount.$participantToUpdate': 0,
       });
       
-      Logger.log("CHAT_SERVICE - Marked as read successfully");
+      Logger.log("CHAT_SERVICE - Successfully marked as read for participant: $participantToUpdate");
+      
     } catch (e) {
       Logger.error("CHAT_SERVICE - Error marking as read", error: e);
       rethrow;
@@ -301,24 +379,35 @@ class ChatService {
     return "${userId}_${merchantId}";
   }
 
-  /// Get receiver ID from conversation
+  /// FIXED: Get receiver ID from conversation with better error handling
   Future<String> _getReceiverId(String conversationId, String senderId) async {
     try {
-      // Parse conversation ID: "user123_MRCN_merchant456"
+      // First, try parsing conversation ID: "user123_MRCN_merchant456"
       final parts = conversationId.split('_');
       if (parts.length >= 3) {
         final userId = parts[0];
         final merchantId = "${parts[1]}_${parts[2]}"; // MRCN_merchant456
         
-        return senderId == userId ? merchantId : userId;
+        final receiverId = senderId == userId ? merchantId : userId;
+        Logger.log("CHAT_SERVICE - Receiver ID from parsing: $receiverId (sender: $senderId)");
+        return receiverId;
       } else {
         // Fallback: get from conversation document
+        Logger.log("CHAT_SERVICE - Using fallback method to get receiver ID");
         final doc = await _firestore.collection('conversations').doc(conversationId).get();
         if (doc.exists) {
           final participants = List<String>.from(doc.data()!['participants'] ?? []);
-          return participants.firstWhere((id) => id != senderId, orElse: () => '');
+          Logger.log("CHAT_SERVICE - Participants: $participants, Sender: $senderId");
+          
+          final receiverId = participants.firstWhere(
+            (id) => id != senderId, 
+            orElse: () => throw Exception("Cannot find receiver in participants")
+          );
+          
+          Logger.log("CHAT_SERVICE - Receiver ID from document: $receiverId");
+          return receiverId;
         }
-        throw Exception("Cannot determine receiver ID");
+        throw Exception("Conversation document not found");
       }
     } catch (e) {
       Logger.error("CHAT_SERVICE - Error getting receiver ID", error: e);
