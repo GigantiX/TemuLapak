@@ -67,6 +67,14 @@
           }
         },
         {
+          "client_id": "96784781082-rh42e1hnqcpn9t3e9jumvmovo7br7tkj.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.temulapak_app",
+            "certificate_hash": "c122eeae803de8322533b05b0e521f45fb00707a"
+          }
+        },
+        {
           "client_id": "96784781082-v1e7ftp2n4drl5qr47lseehj16vv79i6.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
