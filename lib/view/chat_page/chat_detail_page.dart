@@ -177,7 +177,8 @@ class _ChatDetailPageState extends ConsumerState<ChatDetailPage> {
         backgroundColor: MyColor.whitePlain,
         inputBackgroundColor: Colors.white,
         inputTextColor: MyColor.blackPlain,
-        inputBorderRadius: BorderRadius.circular(25),
+        // FIXED: Remove border radius from input
+        inputBorderRadius: BorderRadius.zero,
         messageBorderRadius: 20,
         
         // Message styling
@@ -198,17 +199,30 @@ class _ChatDetailPageState extends ConsumerState<ChatDetailPage> {
           fontSize: 16,
           color: MyColor.blackPlain,
         ),
+        // FIXED: Remove border from input container
         inputContainerDecoration: BoxDecoration(
-          border: Border.all(color: Colors.grey[300]!),
-          borderRadius: BorderRadius.circular(25),
+          color: Colors.white,
+          border: Border.all(color: Colors.transparent),
         ),
         
-        // Send button styling
-        sendButtonIcon: Icon(
-          Icons.send,
-          color: Colors.white,
-          size: 20,
+        // FIXED: Orange send button with white icon
+        sendButtonIcon: Container(
+          width: 44,
+          height: 44,
+          decoration: BoxDecoration(
+            color: MyColor.orange,
+            shape: BoxShape.circle,
+          ),
+          child: Icon(
+            Icons.send,
+            color: Colors.white,
+            size: 20,
+          ),
         ),
+        
+        // Input padding
+        inputPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        inputMargin: EdgeInsets.all(0),
       ),
       
       // Input options - Updated for v1.6.15

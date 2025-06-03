@@ -2,6 +2,8 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/date_symbol_data_local.dart';
+import 'package:intl/intl.dart';
 import 'package:temulapak_app/data/local/hive_service.dart';
 import 'package:temulapak_app/view/chat_page/chat_page.dart';
 import 'package:temulapak_app/view/favorite_page/favorite_page.dart';
@@ -11,16 +13,15 @@ import 'package:temulapak_app/view/login_page/login_viewmodel.dart';
 import 'package:temulapak_app/view/merchant_dashboard_page/lifecycle_handler/merchant_lifecycle_handler.dart';
 import 'package:temulapak_app/view/navigation_page/navigation_page.dart';
 import 'package:temulapak_app/view/profile_page/profile_page.dart';
-import 'package:timeago/timeago.dart' as timeago;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  timeago.setLocaleMessages('id', timeago.IdMessages());
+
+  await initializeDateFormatting('id_ID', null);
+  Intl.defaultLocale = 'id_ID';
+
   await Firebase.initializeApp();
-
-  //Initialize Local Storage Hive
   await HiveService.instance.init();
-
   await SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
   ]);
