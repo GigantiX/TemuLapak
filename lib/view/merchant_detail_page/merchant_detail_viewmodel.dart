@@ -1,7 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import 'package:temulapak_app/data/location/location_services.dart';
+import 'package:temulapak_app/data/location/location_service.dart';
 import 'package:temulapak_app/model/merchant/merchant_model.dart';
 import 'package:temulapak_app/model/state/app_state.dart';
 import 'package:temulapak_app/utils/logger.dart';
@@ -10,8 +10,8 @@ import 'dart:math';
 part 'merchant_detail_viewmodel.g.dart';
 
 @riverpod
-LocationServices locationServicesDetail(Ref ref) {
-  return LocationServices.instance;
+LocationService locationServicesDetail(Ref ref) {
+  return LocationService.instance;
 }
 
 // NEW: StreamProvider untuk live merchant data
