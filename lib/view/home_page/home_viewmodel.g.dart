@@ -22,11 +22,11 @@ final userServiceProvider = AutoDisposeProvider<UserService>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef UserServiceRef = AutoDisposeProviderRef<UserService>;
-String _$locationServicesHash() => r'5840383757050a5a1e0672270c865b1bf781ea3f';
+String _$locationServicesHash() => r'6ba4eb66203721bcc0a36469c8a1d09bedbf66fa';
 
 /// See also [locationServices].
 @ProviderFor(locationServices)
-final locationServicesProvider = AutoDisposeProvider<LocationServices>.internal(
+final locationServicesProvider = AutoDisposeProvider<LocationService>.internal(
   locationServices,
   name: r'locationServicesProvider',
   debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
@@ -38,7 +38,7 @@ final locationServicesProvider = AutoDisposeProvider<LocationServices>.internal(
 
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
-typedef LocationServicesRef = AutoDisposeProviderRef<LocationServices>;
+typedef LocationServicesRef = AutoDisposeProviderRef<LocationService>;
 String _$geocodingServiceHash() => r'0e3d99196c141e249f347338025a49e7cb6959a6';
 
 /// See also [geocodingService].
