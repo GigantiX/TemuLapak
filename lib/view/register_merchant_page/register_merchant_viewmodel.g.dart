@@ -43,7 +43,7 @@ final locationPickerViewModelProvider = AutoDisposeNotifierProvider<
 typedef _$LocationPickerViewModel
     = AutoDisposeNotifier<AppState<LatLng, Exception>>;
 String _$pickImageViewModelHash() =>
-    r'0f4b91a11fb3e5b2ad6a0171399eab75fe6e93d3';
+    r'9e6baf0b1f992d58f4fdc860ae148967d654c657';
 
 /// See also [PickImageViewModel].
 @ProviderFor(PickImageViewModel)

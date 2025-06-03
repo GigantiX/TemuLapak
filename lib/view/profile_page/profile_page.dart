@@ -192,6 +192,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                                       });
                                     });
                                   } else {
+                                    Loading.hide();
                                     Logger.log(
                                         "User is not a merchant, navigating to RegisterMerchantPage");
                                     Future.delayed(Duration(milliseconds: 100),
@@ -204,7 +205,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                                               RegisterMerchantPage(),
                                         ),
                                       ).then((_) {
-                                        Loading.hide();
+                                        
                                       });
                                     });
                                   }

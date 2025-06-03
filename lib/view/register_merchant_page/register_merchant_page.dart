@@ -41,12 +41,30 @@ class _RegisterMerchantPageState extends ConsumerState<RegisterMerchantPage> {
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
+        try {
         _initializeData();
+      } catch (e) {
+        Logger.error("RegisterMerchant - Error in initialization", error: e);
+        if (mounted) {
+          setState(() {
+            _isInitialized = true;
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error initializing page: ${e.toString()}'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
       }
     });
   }
 
   void _initializeData() {
+    Logger.log("RegisterMerchant - Starting initialization");
+  
+  try {
     setState(() {
       if (_productFields.isEmpty) {
         _addProductField();
@@ -54,8 +72,23 @@ class _RegisterMerchantPageState extends ConsumerState<RegisterMerchantPage> {
       _isInitialized = true;
     });
 
-    _subscription = ref.listenManual(
-        registerMerchantViewModelProvider, _handleStateChanges);
+    // FIXED: Add null check before listening
+    if (mounted) {
+      _subscription = ref.listenManual(
+        registerMerchantViewModelProvider, 
+        _handleStateChanges,
+      );
+      Logger.log("RegisterMerchant - Initialization completed successfully");
+    }
+  } catch (e) {
+    Logger.error("RegisterMerchant - Error in _initializeData", error: e);
+    if (mounted) {
+      setState(() {
+        _isInitialized = true; // Allow UI to show even on error
+      });
+    }
+    rethrow;
+  }
   }
 
   @override
@@ -309,117 +342,7 @@ class _RegisterMerchantPageState extends ConsumerState<RegisterMerchantPage> {
                           },
                         ),
                         SizedBox(height: 20),
-                        Text(
-                          "Foto Toko / Dagangan",
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        SizedBox(height: 5),
-                        Stack(
-                          children: [
-                            AspectRatio(
-                              aspectRatio: 16 / 9,
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(6),
-                                child: imageState.when(
-                                  idle: () => Image.asset(
-                                    "lib/assets/images/UploadImage.jpg",
-                                    fit: BoxFit.cover,
-                                  ),
-                                  loading: () => Container(
-                                    color: Colors.grey[300],
-                                    child: Center(
-                                        child: CircularProgressIndicator()),
-                                  ),
-                                  success: (file) => file != null
-                                      ? Image.file(
-                                          file,
-                                          fit: BoxFit.cover,
-                                        )
-                                      : Image.asset(
-                                          "lib/assets/images/UploadImage.jpg",
-                                          fit: BoxFit.cover,
-                                        ),
-                                  error: (_, message) => Stack(
-                                    fit: StackFit.expand,
-                                    children: [
-                                      Image.asset(
-                                        "lib/assets/images/UploadImage.jpg",
-                                        fit: BoxFit.cover,
-                                      ),
-                                      Container(
-                                        color:
-                                            Colors.black.withValues(alpha: 0.5),
-                                        child: Center(
-                                          child: Text(
-                                            message ?? "Error loading image",
-                                            style:
-                                                TextStyle(color: Colors.white),
-                                            textAlign: TextAlign.center,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        SizedBox(height: 5),
-                        Row(
-                          children: [
-                            Expanded(
-                                child: ElevatedButton(
-                              onPressed: () {
-                                ref
-                                    .read(pickImageViewModelProvider.notifier)
-                                    .pickImage(ImageSource.camera);
-                              },
-                              style: ElevatedButton.styleFrom(
-                                  backgroundColor: MyColor.orange,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(7),
-                                  ),
-                                  iconColor: MyColor.white,
-                                  foregroundColor: MyColor.white),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(Icons.camera_alt),
-                                  SizedBox(width: 5),
-                                  Text("Camera"),
-                                ],
-                              ),
-                            )),
-                            SizedBox(width: 10),
-                            Expanded(
-                                child: ElevatedButton(
-                              onPressed: () {
-                                ref
-                                    .read(pickImageViewModelProvider.notifier)
-                                    .pickImage(ImageSource.gallery);
-                              },
-                              style: ElevatedButton.styleFrom(
-                                  backgroundColor: MyColor.orange,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(7),
-                                  ),
-                                  iconColor: MyColor.white,
-                                  foregroundColor: MyColor.white),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(Icons.photo_library),
-                                  SizedBox(width: 5),
-                                  Text("Gallery"),
-                                ],
-                              ),
-                            )),
-                          ],
-                        ),
+                        _buildImageSection(imageState),
                         SizedBox(height: 20),
                         Text(
                           "Deskripsi Toko / Dagangan",
@@ -750,4 +673,194 @@ class _RegisterMerchantPageState extends ConsumerState<RegisterMerchantPage> {
                   ))),
     );
   }
+
+  Widget _buildImageSection(AppState<File?, Exception> imageState) {
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(
+        "Foto Toko / Dagangan",
+        style: TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+      SizedBox(height: 5),
+      Stack(
+        children: [
+          AspectRatio(
+            aspectRatio: 16 / 9,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(6),
+              child: imageState.when(
+                idle: () => Image.asset(
+                  "lib/assets/images/UploadImage.jpg",
+                  fit: BoxFit.cover,
+                ),
+                loading: () => Container(
+                  color: Colors.grey[300],
+                  child: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        CircularProgressIndicator(
+                          color: MyColor.orange,
+                          strokeWidth: 2,
+                        ),
+                        SizedBox(height: 8),
+                        Text(
+                          'Memuat gambar...',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                success: (file) => file != null
+                    ? Image.file(
+                        file,
+                        fit: BoxFit.cover,
+                      )
+                    : Image.asset(
+                        "lib/assets/images/UploadImage.jpg",
+                        fit: BoxFit.cover,
+                      ),
+                error: (error, message) => Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    Image.asset(
+                      "lib/assets/images/UploadImage.jpg",
+                      fit: BoxFit.cover,
+                    ),
+                    Container(
+                      color: Colors.red.withValues(alpha: 0.7),
+                      child: Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.error,
+                              color: Colors.white,
+                              size: 32,
+                            ),
+                            SizedBox(height: 8),
+                            Text(
+                              message ?? "Error loading image",
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                            SizedBox(height: 8),
+                            TextButton(
+                              onPressed: () {
+                                // FIXED: Clear error state
+                                ref.read(pickImageViewModelProvider.notifier).clearError();
+                              },
+                              child: Text(
+                                'Tutup',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+      SizedBox(height: 5),
+      Row(
+        children: [
+          Expanded(
+            child: ElevatedButton(
+              onPressed: () {
+                // FIXED: Add try-catch for image picking
+                try {
+                  ref
+                      .read(pickImageViewModelProvider.notifier)
+                      .pickImage(ImageSource.camera);
+                } catch (e) {
+                  Logger.error("Error opening camera", error: e);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Tidak dapat membuka kamera: ${e.toString()}'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: MyColor.orange,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(7),
+                ),
+                iconColor: MyColor.white,
+                foregroundColor: MyColor.white,
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.camera_alt),
+                  SizedBox(width: 5),
+                  Text("Camera"),
+                ],
+              ),
+            ),
+          ),
+          SizedBox(width: 10),
+          Expanded(
+            child: ElevatedButton(
+              onPressed: () {
+                // FIXED: Add try-catch for image picking
+                try {
+                  ref
+                      .read(pickImageViewModelProvider.notifier)
+                      .pickImage(ImageSource.gallery);
+                } catch (e) {
+                  Logger.error("Error opening gallery", error: e);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Tidak dapat membuka galeri: ${e.toString()}'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: MyColor.orange,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(7),
+                ),
+                iconColor: MyColor.white,
+                foregroundColor: MyColor.white,
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.photo_library),
+                  SizedBox(width: 5),
+                  Text("Gallery"),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+      SizedBox(height: 20),
+    ],
+  );
+}
 }
