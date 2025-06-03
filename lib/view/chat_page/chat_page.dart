@@ -52,12 +52,10 @@ class _ChatPageState extends ConsumerState<ChatPage> with SingleTickerProviderSt
     final merchantId = data['merchantId'] as String;
 
     // Initialize tab controller based on merchant status
-    if (_tabController == null) {
-      _tabController = TabController(
+    _tabController ??= TabController(
         length: isMerchant ? 2 : 1,
         vsync: this,
       );
-    }
 
     if (isMerchant) {
       return DefaultTabController(

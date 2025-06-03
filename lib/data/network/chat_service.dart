@@ -69,23 +69,30 @@ class ChatService {
     }
   }
 
-  /// Get conversations where user is participant as USER
+  /// FIXED: Simplified user conversations query - removed role filter to avoid complex index
   Stream<List<ConversationModel>> getUserConversations(String userId) {
     Logger.log("CHAT_SERVICE - Getting user conversations for: $userId");
     
     return _firestore
         .collection('conversations')
         .where('participants', arrayContains: userId)
-        .where('participantDetails.$userId.role', isEqualTo: 'user')
-        .orderBy('updatedAt', descending: true)
         .snapshots()
         .map((snapshot) {
       Logger.log("CHAT_SERVICE - User conversations snapshot: ${snapshot.docs.length} conversations");
       
-      return snapshot.docs
+      final conversations = snapshot.docs
           .map((doc) {
             try {
-              return ConversationModel.fromMap(doc.data());
+              final conversation = ConversationModel.fromMap(doc.data());
+              
+              // FIXED: Filter by role in-memory instead of in query
+              final userRole = conversation.participantDetails[userId]?.role;
+              
+              // Only include conversations where current user has 'user' role
+              if (userRole == 'user') {
+                return conversation;
+              }
+              return null;
             } catch (e) {
               Logger.error("CHAT_SERVICE - Error parsing conversation ${doc.id}", error: e);
               return null;
@@ -94,22 +101,31 @@ class ChatService {
           .where((conversation) => conversation != null)
           .cast<ConversationModel>()
           .toList();
+      
+      // FIXED: Sort in-memory by updatedAt descending
+      conversations.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+      
+      Logger.log("CHAT_SERVICE - Filtered user conversations: ${conversations.length}");
+      return conversations;
+    }).handleError((error) {
+      Logger.error("CHAT_SERVICE - User conversations stream error", error: error);
+      // Return empty list instead of throwing error
+      return <ConversationModel>[];
     });
   }
 
-  /// Get conversations where user is participant as MERCHANT
+  /// FIXED: Simplified merchant conversations query - removed orderBy to avoid complex index
   Stream<List<ConversationModel>> getMerchantConversations(String merchantId) {
     Logger.log("CHAT_SERVICE - Getting merchant conversations for: $merchantId");
     
     return _firestore
         .collection('conversations')
         .where('merchantId', isEqualTo: merchantId)
-        .orderBy('updatedAt', descending: true)
         .snapshots()
         .map((snapshot) {
       Logger.log("CHAT_SERVICE - Merchant conversations snapshot: ${snapshot.docs.length} conversations");
       
-      return snapshot.docs
+      final conversations = snapshot.docs
           .map((doc) {
             try {
               return ConversationModel.fromMap(doc.data());
@@ -121,6 +137,16 @@ class ChatService {
           .where((conversation) => conversation != null)
           .cast<ConversationModel>()
           .toList();
+      
+      // FIXED: Sort in-memory by updatedAt descending
+      conversations.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+      
+      Logger.log("CHAT_SERVICE - Sorted merchant conversations: ${conversations.length}");
+      return conversations;
+    }).handleError((error) {
+      Logger.error("CHAT_SERVICE - Merchant conversations stream error", error: error);
+      // Return empty list instead of throwing error
+      return <ConversationModel>[];
     });
   }
 
@@ -141,6 +167,9 @@ class ChatService {
           return null;
         }
       }
+      return null;
+    }).handleError((error) {
+      Logger.error("CHAT_SERVICE - Conversation stream error", error: error);
       return null;
     });
   }
@@ -239,6 +268,9 @@ class ChatService {
           .where((message) => message != null)
           .cast<MessageModel>()
           .toList();
+    }).handleError((error) {
+      Logger.error("CHAT_SERVICE - Messages stream error", error: error);
+      return <MessageModel>[];
     });
   }
 
