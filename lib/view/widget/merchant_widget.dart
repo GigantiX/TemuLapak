@@ -26,7 +26,7 @@ class MerchantWidget extends ConsumerWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 6),
+        margin: const EdgeInsets.symmetric(vertical: 5),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(12),
@@ -51,7 +51,7 @@ class MerchantWidget extends ConsumerWidget {
               ),
               child: SizedBox(
                 width: 130,
-                height: 130, // Full height to match container with padding
+                height: 134, // Full height to match container with padding
                 child: merchant.merchantImgUrl != null &&
                         merchant.merchantImgUrl!.isNotEmpty
                     ? Image.network(
@@ -72,7 +72,7 @@ class MerchantWidget extends ConsumerWidget {
             // Merchant Info - With padding
             Expanded(
               child: Padding(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.all(10),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
