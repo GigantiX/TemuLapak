@@ -11,9 +11,11 @@ import 'package:temulapak_app/view/login_page/login_viewmodel.dart';
 import 'package:temulapak_app/view/merchant_dashboard_page/lifecycle_handler/merchant_lifecycle_handler.dart';
 import 'package:temulapak_app/view/navigation_page/navigation_page.dart';
 import 'package:temulapak_app/view/profile_page/profile_page.dart';
+import 'package:timeago/timeago.dart' as timeago;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  timeago.setLocaleMessages('id', timeago.IdMessages());
   await Firebase.initializeApp();
 
   //Initialize Local Storage Hive
