@@ -7,12 +7,12 @@ part of 'merchant_detail_viewmodel.dart';
 // **************************************************************************
 
 String _$locationServicesDetailHash() =>
-    r'dd0f711f37993992f13ae8d7ebbd49e373fd7f8e';
+    r'b1fc61c50394f27cc5aae4be031fd739ed6edff3';
 
 /// See also [locationServicesDetail].
 @ProviderFor(locationServicesDetail)
 final locationServicesDetailProvider =
-    AutoDisposeProvider<LocationServices>.internal(
+    AutoDisposeProvider<LocationService>.internal(
   locationServicesDetail,
   name: r'locationServicesDetailProvider',
   debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
@@ -24,7 +24,7 @@ final locationServicesDetailProvider =
 
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
-typedef LocationServicesDetailRef = AutoDisposeProviderRef<LocationServices>;
+typedef LocationServicesDetailRef = AutoDisposeProviderRef<LocationService>;
 String _$merchantLiveStreamHash() =>
     r'54eb3e38cc8a0b5e022faf19c1192a0ff5276808';
 

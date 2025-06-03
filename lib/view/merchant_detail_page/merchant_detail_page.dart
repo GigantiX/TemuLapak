@@ -1,6 +1,3 @@
-// File: lib/view/merchant_detail_page/merchant_detail_page.dart
-// STEP 4: Add distance state management and callback integration
-
 import 'dart:io';
 import 'dart:async';
 import 'package:flutter/material.dart';
@@ -17,7 +14,7 @@ import 'package:temulapak_app/view/merchant_detail_page/merchant_detail_viewmode
 import 'package:temulapak_app/view/widget/live_tracking_map.dart';
 import 'package:temulapak_app/view/widget/location_update_indicator.dart';
 import 'package:temulapak_app/view/widget/favorite_button.dart';
-import 'package:temulapak_app/data/location/location_services.dart';
+import 'package:temulapak_app/data/location/location_service.dart';
 import 'package:flutter_svg/svg.dart';
 
 class MerchantDetailPage extends ConsumerStatefulWidget {
@@ -223,7 +220,7 @@ class _MerchantDetailPageState extends ConsumerState<MerchantDetailPage> with Wi
       }
       
       // Get initial user location
-      final locationService = LocationServices.instance;
+      final locationService = LocationService.instance;
       final initialPosition = await locationService.getCurrentLocation();
       
       if (initialPosition != null) {
