@@ -8,7 +8,6 @@ import 'package:temulapak_app/view/edit_merchant_profile_page/edit_merchant_prof
 import 'package:temulapak_app/view/merchant_dashboard_page/live_tracking/live_tracking_dialog.dart';
 import 'package:temulapak_app/view/merchant_dashboard_page/live_tracking/live_tracking_notifier.dart';
 import 'package:temulapak_app/view/merchant_dashboard_page/merchant_dashboard_viewmodel.dart';
-import 'package:temulapak_app/view/register_merchant_page/register_merchant_page.dart';
 import 'package:temulapak_app/view/widget/map_picker/map_picker_dialog.dart';
 
 class MerchantDashboardPage extends ConsumerStatefulWidget {
