@@ -6,6 +6,7 @@ import 'package:temulapak_app/utils/loading/loading.dart';
 import 'package:temulapak_app/utils/logger.dart';
 import 'package:temulapak_app/utils/network_checker.dart';
 import 'package:temulapak_app/view/help_centre_page/help_center_page.dart';
+import 'package:temulapak_app/view/merchant_dashboard_page/merchant_dashboard_page.dart';
 import 'package:temulapak_app/view/profile_page/profile_viewmodel.dart';
 import 'package:temulapak_app/view/faq_page/faq_page.dart';
 import 'package:temulapak_app/view/about_page/about_page.dart';
@@ -172,19 +173,59 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                               Logger.log("Tapped on Merchant Page");
                               Loading.show(context);
 
-                              Future.delayed(Duration(milliseconds: 100), () {
-                                if (!context.mounted) return;
-                                Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) =>
-                                          RegisterMerchantPage(),
-                                    )).then((_) {
-                                  Loading.hide();
-                                });
-
-                                Loading.hide();
-                              });
+                              userState.maybeWhen(
+                                success: (user) {
+                                  if (user.isMerchant == true) {
+                                    Logger.log(
+                                        "User is a merchant, navigating to MerchantDashboardPage");
+                                    Future.delayed(Duration(milliseconds: 100),
+                                        () {
+                                      if (!context.mounted) return;
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) =>
+                                              MerchantDashboardPage(),
+                                        ),
+                                      ).then((_) {
+                                        Loading.hide();
+                                      });
+                                    });
+                                  } else {
+                                    Logger.log(
+                                        "User is not a merchant, navigating to RegisterMerchantPage");
+                                    Future.delayed(Duration(milliseconds: 100),
+                                        () {
+                                      if (!context.mounted) return;
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) =>
+                                              RegisterMerchantPage(),
+                                        ),
+                                      ).then((_) {
+                                        Loading.hide();
+                                      });
+                                    });
+                                  }
+                                },
+                                orElse: () {
+                                  // Handle case when user data isn't available yet
+                                  Logger.error("User data not available");
+                                  Future.delayed(Duration(milliseconds: 100),
+                                      () {
+                                    Loading.hide();
+                                    if (!context.mounted) return;
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                            'Unable to access merchant page'),
+                                        backgroundColor: Colors.red,
+                                      ),
+                                    );
+                                  });
+                                },
+                              );
                             },
                             child: const Padding(
                               padding: EdgeInsets.symmetric(horizontal: 20),

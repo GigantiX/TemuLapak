@@ -8,6 +8,7 @@ import 'package:temulapak_app/view/favorite_page/favorite_page.dart';
 import 'package:temulapak_app/view/home_page/home_page.dart';
 import 'package:temulapak_app/view/login_page/login_page.dart';
 import 'package:temulapak_app/view/login_page/login_viewmodel.dart';
+import 'package:temulapak_app/view/merchant_dashboard_page/lifecycle_handler/merchant_lifecycle_handler.dart';
 import 'package:temulapak_app/view/navigation_page/navigation_page.dart';
 import 'package:temulapak_app/view/profile_page/profile_page.dart';
 
@@ -36,22 +37,24 @@ class MyApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final loginState = ref.watch(loginViewModelProvider);
     
-    return MaterialApp( 
-      debugShowCheckedModeBanner: false,
-      title: 'TemuLapak',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-        fontFamily: 'Inter',
+    return MerchantLifecycleHandler(
+      child: MaterialApp( 
+        debugShowCheckedModeBanner: false,
+        title: 'TemuLapak',
+        theme: ThemeData(
+          primarySwatch: Colors.blue,
+          fontFamily: 'Inter',
+        ),
+        home: loginState.user != null ? const NavigationPage() : const LoginPage(),
+        routes: {
+          '/navigation': (context) => NavigationPage(),
+          '/login': (context) => const LoginPage(),
+          '/home': (context) => const HomePage(),
+          '/chat': (context) => const ChatPage(),
+          '/favorite': (context) => const FavoritePage(),
+          '/profile': (context) => const ProfilePage(),
+        },
       ),
-      home: loginState.user != null ? const NavigationPage() : const LoginPage(),
-      routes: {
-        '/navigation': (context) => NavigationPage(),
-        '/login': (context) => const LoginPage(),
-        '/home': (context) => const HomePage(),
-        '/chat': (context) => const ChatPage(),
-        '/favorite': (context) => const FavoritePage(),
-        '/profile': (context) => const ProfilePage(),
-      },
     );
   }
 }
