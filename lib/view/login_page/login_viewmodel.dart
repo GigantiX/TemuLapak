@@ -1,5 +1,7 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:temulapak_app/data/network/login_service.dart';
+import 'package:temulapak_app/data/network/notification_service.dart';
 import 'package:temulapak_app/model/login/login_state.dart';
 import 'package:temulapak_app/utils/logger.dart';
 
@@ -13,6 +15,7 @@ final loginViewModelProvider =
 
 class LoginViewModel extends StateNotifier<LoginState> {
   final LoginService _loginModel;
+  final NotificationService _notificationService = NotificationService.instance;
 
   LoginViewModel(this._loginModel)
       : super(LoginState(user: _loginModel.currentUser));
@@ -22,6 +25,7 @@ class LoginViewModel extends StateNotifier<LoginState> {
     try {
       await _loginModel.signInWithGoogle();
       state = state.copyWith(user: _loginModel.currentUser, isLoading: false);
+      await _notificationService.updateFCMTokenOnLogin();
       Logger.log("Google Sign In Success");
     } catch (e) {
       Logger.error("Google Sign In Error", error: e);

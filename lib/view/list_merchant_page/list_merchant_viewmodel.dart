@@ -4,12 +4,13 @@
 import 'dart:math';
 import 'package:geolocator/geolocator.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import 'package:temulapak_app/data/location/location_services.dart';
+import 'package:temulapak_app/data/location/location_service.dart';
 import 'package:temulapak_app/data/network/merchant_service.dart';
 import 'package:temulapak_app/data/network/geo_merchant_service.dart'; // NEW IMPORT
 import 'package:temulapak_app/model/merchant/merchant_model.dart';
 import 'package:temulapak_app/model/state/app_state.dart';
 import 'package:temulapak_app/utils/logger.dart';
+import 'package:temulapak_app/view/home_page/home_viewmodel.dart';
 
 part 'list_merchant_viewmodel.g.dart';
 
@@ -91,8 +92,8 @@ MerchantService merchantService(ref) {
 
 // Provider for LocationServices
 @riverpod
-LocationServices locationServices(ref) {
-  return LocationServices.instance;
+LocationServiceslocationServices(ref) {
+  return LocationService.instance;
 }
 
 // NEW: Provider for GeoMerchantService

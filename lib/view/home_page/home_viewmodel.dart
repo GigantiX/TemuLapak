@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:temulapak_app/data/location/geocoding_service.dart';
-import 'package:temulapak_app/data/location/location_services.dart';
+import 'package:temulapak_app/data/location/location_service.dart';
 import 'package:temulapak_app/data/network/user_service.dart';
 import 'package:temulapak_app/data/network/merchant_service.dart';
 import 'package:temulapak_app/data/network/geo_merchant_service.dart';
@@ -22,8 +22,8 @@ UserService userService(Ref ref) {
 }
 
 @riverpod
-LocationServices locationServices(Ref ref) {
-  return LocationServices.instance;
+LocationService locationServices(Ref ref) {
+  return LocationService.instance;
 }
 
 @riverpod

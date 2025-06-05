@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:temulapak_app/assets/mycolor.dart';
-import 'package:temulapak_app/data/location/location_services.dart';
+import 'package:temulapak_app/data/location/location_service.dart';
 import 'package:temulapak_app/model/login/login_state.dart';
 import 'package:temulapak_app/utils/custom_dialog.dart';
 import 'package:temulapak_app/utils/loading/loading.dart';
@@ -127,7 +127,7 @@ class LoginPage extends ConsumerWidget {
                       Logger.log("Login Pressed");
 
                       final permissionGranted =
-                          await LocationServices.instance.checkPermission();
+                          await LocationService.instance.checkPermission();
 
                       if (!permissionGranted) {
                         if (!context.mounted) return;
@@ -136,7 +136,7 @@ class LoginPage extends ConsumerWidget {
                                     LocationPermission.denied &&
                                 await Geolocator.checkPermission() !=
                                     LocationPermission.deniedForever;
-                        final isPreciseAvailable = await LocationServices
+                        final isPreciseAvailable = await LocationService
                             .instance
                             .isPreciseLocAvailable();
                         if (!context.mounted) return;

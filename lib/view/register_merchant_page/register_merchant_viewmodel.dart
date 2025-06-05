@@ -81,6 +81,7 @@ class PickImageViewModel extends _$PickImageViewModel {
   
   @override
   AppState<File?, Exception> build() {
+    Logger.log("PickImageViewModel - Initializing with idle state");
     return AppState.idle();
   }
   
@@ -97,9 +98,7 @@ class PickImageViewModel extends _$PickImageViewModel {
       
       if (pickedFile == null) {
         Logger.log("No image selected");
-        state = state.data != null 
-            ? AppState.success(state.data)
-            : AppState.idle();
+        state = AppState.idle();
         return;
       }
       
@@ -121,12 +120,25 @@ class PickImageViewModel extends _$PickImageViewModel {
       Logger.log("Image selected successfully: ${pickedFile.path}");
       Logger.log("Image size: ${(fileSize / 1024 / 1024).toStringAsFixed(2)}MB");
       state = AppState.success(file);
+      
     } catch (e) {
       Logger.error("Error picking image", error: e);
       state = AppState.error(
         e is Exception ? e : Exception(e.toString()),
         message: 'Gagal memilih gambar. Silakan coba lagi.'
       );
+    }
+  }
+  
+  void resetImage() {
+    Logger.log("PickImageViewModel - Resetting image state");
+    state = AppState.idle();
+  }
+  
+  void clearError() {
+    if (state.isError) {
+      Logger.log("PickImageViewModel - Clearing error state");
+      state = AppState.idle();
     }
   }
 }

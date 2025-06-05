@@ -13,9 +13,13 @@ dependencies:
   cupertino_icons: ^1.0.8
   firebase_auth: ^5.4.1
   firebase_core: ^3.10.1
+  firebase_messaging: ^15.2.6
   firebase_storage: ^12.4.6
   flutter:
     sdk: flutter
+  flutter_chat_types: ^3.6.2
+  flutter_chat_ui: ^1.6.15
+  flutter_local_notifications: ^19.2.1
   flutter_riverpod: ^2.6.1
   flutter_svg: ^2.0.17
   font_awesome_flutter: ^10.8.0
@@ -29,20 +33,45 @@ dependencies:
   hive_flutter: ^1.1.0
   http: ^1.4.0
   image_picker: ^1.1.2
+  intl: ^0.19.0
   lottie: ^3.3.1
   path_provider: ^2.1.5
   riverpod_annotation: ^2.6.1
   shimmer: ^3.0.0
+  timeago: ^3.7.1
   url_launcher: ^6.2.4
 
 dev_dependencies:
   build_runner: ^2.4.8
   custom_lint: ^0.6.2
+  flutter_launcher_icons: ^0.13.1
   flutter_lints: ^5.0.0
+  flutter_native_splash: ^2.4.0
   flutter_test:
     sdk: flutter
   riverpod_generator: ^2.3.11
   riverpod_lint: ^2.3.9
+
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: "lib/assets/icons/IconApp.png"
+  min_sdk_android: 21
+
+flutter_native_splash:
+  color: "#FF4F00"
+
+  image: "lib/assets/images/SplashScreen.png"
+  image_dark: "lib/assets/images/SplashScreen.png"
+
+  android_12:
+    image: "lib/assets/images/SplashScreen.png"
+    image_dark: "lib/assets/images/SplashScreen.png"
+
+  web: true
+  android_gravity: center
+  ios_content_mode: center
+  fullscreen: true
 
 flutter:
   uses-material-design: true
