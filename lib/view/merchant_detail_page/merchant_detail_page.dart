@@ -1,12 +1,12 @@
-// File: lib/view/merchant_detail_page/merchant_detail_page.dart
-// STEP 4: Add distance state management and callback integration
-
 import 'dart:io';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:temulapak_app/utils/loading/loading.dart';
+import 'package:temulapak_app/view/chat_page/chat_detail_page.dart';
+import 'package:temulapak_app/view/chat_page/chat_viewmodel.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:temulapak_app/assets/mycolor.dart';
@@ -17,7 +17,7 @@ import 'package:temulapak_app/view/merchant_detail_page/merchant_detail_viewmode
 import 'package:temulapak_app/view/widget/live_tracking_map.dart';
 import 'package:temulapak_app/view/widget/location_update_indicator.dart';
 import 'package:temulapak_app/view/widget/favorite_button.dart';
-import 'package:temulapak_app/data/location/location_services.dart';
+import 'package:temulapak_app/data/location/location_service.dart';
 import 'package:flutter_svg/svg.dart';
 
 class MerchantDetailPage extends ConsumerStatefulWidget {
@@ -32,29 +32,29 @@ class MerchantDetailPage extends ConsumerStatefulWidget {
   ConsumerState<MerchantDetailPage> createState() => _MerchantDetailPageState();
 }
 
-class _MerchantDetailPageState extends ConsumerState<MerchantDetailPage> with WidgetsBindingObserver {
-  
+class _MerchantDetailPageState extends ConsumerState<MerchantDetailPage>
+    with WidgetsBindingObserver {
   // ScrollController and map interaction state
   final ScrollController _scrollController = ScrollController();
   bool _isMapInteracting = false;
-  
+
   // STEP 4: NEW - Distance state management
   double? _currentDistance;
   bool _isDistanceCalculating = false;
-  
+
   // STEP 5: NEW - User location tracking
   Position? _currentUserLocation;
   StreamSubscription<Position>? _userLocationSubscription;
   Timer? _distanceRecalculationTimer;
   MerchantModel? _lastKnownMerchant;
-  
+
   // STEP 6: NEW - Error handling & fallback state
   bool _hasLocationPermission = true;
   bool _isLocationServiceEnabled = true;
   int _distanceCalculationFailures = 0;
   Timer? _retryTimer;
   bool _isUsingFallbackDistance = false;
-  
+
   // STEP 7: NEW - Performance optimization
   DateTime? _lastLocationUpdate;
   DateTime? _lastDistanceCalculation;
@@ -65,22 +65,23 @@ class _MerchantDetailPageState extends ConsumerState<MerchantDetailPage> with Wi
   static const Duration _locationCacheTimeout = Duration(minutes: 2);
   static const Duration _minCalculationInterval = Duration(seconds: 3);
   static const int _maxBackgroundCalculations = 5;
-  
+
   @override
   void initState() {
     super.initState();
-    
+
     // STEP 4: Log initial state
-    Logger.log("DETAIL_PAGE - Step 4: Initializing with distance state management");
-    
+    Logger.log(
+        "DETAIL_PAGE - Step 4: Initializing with distance state management");
+
     // STEP 5: NEW - Initialize user location tracking
     Logger.log("DETAIL_PAGE - Step 5: Starting user location tracking");
     _initializeUserLocationTracking();
-    
+
     // STEP 7: NEW - Initialize performance optimizations
     Logger.log("DETAIL_PAGE - Step 7: Enabling performance optimizations");
     _initializePerformanceOptimizations();
-    
+
     // Initialize merchant detail
     Future.microtask(() {
       final notifier = ref.read(merchantDetailViewModelProvider.notifier);
@@ -94,16 +95,16 @@ class _MerchantDetailPageState extends ConsumerState<MerchantDetailPage> with Wi
     Logger.log("DETAIL_PAGE - Step 5: Disposing user location tracking");
     _userLocationSubscription?.cancel();
     _distanceRecalculationTimer?.cancel();
-    
+
     // STEP 6: NEW - Clean up error handling timers
     _retryTimer?.cancel();
-    
+
     // STEP 7: NEW - Clean up performance optimization timers
     _locationCacheInvalidationTimer?.cancel();
-    
+
     // STEP 7: NEW - Remove lifecycle observer
     WidgetsBinding.instance.removeObserver(this);
-    
+
     _scrollController.dispose();
     super.dispose();
   }
@@ -112,10 +113,10 @@ class _MerchantDetailPageState extends ConsumerState<MerchantDetailPage> with Wi
   void _initializePerformanceOptimizations() {
     // Start location cache invalidation timer
     _startLocationCacheInvalidation();
-    
+
     // Initialize app lifecycle listener for background detection
     WidgetsBinding.instance.addObserver(this);
-    
+
     Logger.log("DETAIL_PAGE - Step 7: Performance optimizations initialized");
   }
 
@@ -123,7 +124,7 @@ class _MerchantDetailPageState extends ConsumerState<MerchantDetailPage> with Wi
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
-    
+
     switch (state) {
       case AppLifecycleState.paused:
       case AppLifecycleState.inactive:
@@ -141,14 +142,16 @@ class _MerchantDetailPageState extends ConsumerState<MerchantDetailPage> with Wi
   void _handleAppBackground() {
     _isAppInBackground = true;
     _backgroundCalculationCount = 0;
-    Logger.log("DETAIL_PAGE - Step 7: App backgrounded, reducing location activity");
+    Logger.log(
+        "DETAIL_PAGE - Step 7: App backgrounded, reducing location activity");
   }
 
   void _handleAppForeground() {
     if (_isAppInBackground) {
       _isAppInBackground = false;
-      Logger.log("DETAIL_PAGE - Step 7: App foregrounded, resuming normal location activity");
-      
+      Logger.log(
+          "DETAIL_PAGE - Step 7: App foregrounded, resuming normal location activity");
+
       // Invalidate cache when returning to foreground for fresh data
       _invalidateLocationCache();
     }
@@ -157,7 +160,8 @@ class _MerchantDetailPageState extends ConsumerState<MerchantDetailPage> with Wi
   // STEP 7: NEW - Start location cache invalidation timer
   void _startLocationCacheInvalidation() {
     _locationCacheInvalidationTimer?.cancel();
-    _locationCacheInvalidationTimer = Timer.periodic(_locationCacheTimeout, (timer) {
+    _locationCacheInvalidationTimer =
+        Timer.periodic(_locationCacheTimeout, (timer) {
       if (mounted) {
         _invalidateLocationCache();
       } else {
@@ -169,7 +173,8 @@ class _MerchantDetailPageState extends ConsumerState<MerchantDetailPage> with Wi
   // STEP 7: NEW - Invalidate location cache
   void _invalidateLocationCache() {
     if (_cachedUserLocation != null) {
-      Logger.log("DETAIL_PAGE - Step 7: Invalidating location cache after ${_locationCacheTimeout.inMinutes} minutes");
+      Logger.log(
+          "DETAIL_PAGE - Step 7: Invalidating location cache after ${_locationCacheTimeout.inMinutes} minutes");
       _cachedUserLocation = null;
       _lastLocationUpdate = null;
     }
@@ -181,20 +186,23 @@ class _MerchantDetailPageState extends ConsumerState<MerchantDetailPage> with Wi
     if (_isAppInBackground) {
       _backgroundCalculationCount++;
       if (_backgroundCalculationCount > _maxBackgroundCalculations) {
-        Logger.log("DETAIL_PAGE - Step 7: Skipping calculation - too many background calculations");
+        Logger.log(
+            "DETAIL_PAGE - Step 7: Skipping calculation - too many background calculations");
         return true;
       }
     }
-    
+
     // Skip if we calculated too recently
     if (_lastDistanceCalculation != null) {
-      final timeSinceLastCalculation = DateTime.now().difference(_lastDistanceCalculation!);
+      final timeSinceLastCalculation =
+          DateTime.now().difference(_lastDistanceCalculation!);
       if (timeSinceLastCalculation < _minCalculationInterval) {
-        Logger.log("DETAIL_PAGE - Step 7: Skipping calculation - too recent (${timeSinceLastCalculation.inSeconds}s ago)");
+        Logger.log(
+            "DETAIL_PAGE - Step 7: Skipping calculation - too recent (${timeSinceLastCalculation.inSeconds}s ago)");
         return true;
       }
     }
-    
+
     return false;
   }
 
@@ -202,51 +210,57 @@ class _MerchantDetailPageState extends ConsumerState<MerchantDetailPage> with Wi
   Future<void> _initializeUserLocationTracking() async {
     try {
       Logger.log("DETAIL_PAGE - Step 5: Initializing user location tracking");
-      
+
       // STEP 6: NEW - Check location permission and service status
       final permissionStatus = await _checkLocationStatus();
       if (!permissionStatus) {
-        Logger.log("DETAIL_PAGE - Step 6: Location not available, using fallback distance");
+        Logger.log(
+            "DETAIL_PAGE - Step 6: Location not available, using fallback distance");
         _enableFallbackMode();
         return;
       }
-      
+
       // STEP 7: NEW - Try to use cached location first for performance
       if (_cachedUserLocation != null && _lastLocationUpdate != null) {
         final cacheAge = DateTime.now().difference(_lastLocationUpdate!);
         if (cacheAge < _locationCacheTimeout) {
-          Logger.log("DETAIL_PAGE - Step 7: Using cached location (${cacheAge.inMinutes}m old)");
+          Logger.log(
+              "DETAIL_PAGE - Step 7: Using cached location (${cacheAge.inMinutes}m old)");
           _currentUserLocation = _cachedUserLocation;
           _startUserLocationStream();
           return;
         }
       }
-      
+
       // Get initial user location
-      final locationService = LocationServices.instance;
+      final locationService = LocationService.instance;
       final initialPosition = await locationService.getCurrentLocation();
-      
+
       if (initialPosition != null) {
         _currentUserLocation = initialPosition;
-        
+
         // STEP 7: NEW - Cache the location
         _cachedUserLocation = initialPosition;
         _lastLocationUpdate = DateTime.now();
-        
-        Logger.log("DETAIL_PAGE - Step 5: Initial user location: ${initialPosition.latitude}, ${initialPosition.longitude}");
-        
+
+        Logger.log(
+            "DETAIL_PAGE - Step 5: Initial user location: ${initialPosition.latitude}, ${initialPosition.longitude}");
+
         // Reset failure count on success
         _distanceCalculationFailures = 0;
         _isUsingFallbackDistance = false;
-        
+
         // Start listening to location changes
         _startUserLocationStream();
       } else {
-        Logger.log("DETAIL_PAGE - Step 6: Could not get initial user location, enabling fallback");
+        Logger.log(
+            "DETAIL_PAGE - Step 6: Could not get initial user location, enabling fallback");
         _enableFallbackMode();
       }
     } catch (e) {
-      Logger.error("DETAIL_PAGE - Step 6: Error initializing user location tracking", error: e);
+      Logger.error(
+          "DETAIL_PAGE - Step 6: Error initializing user location tracking",
+          error: e);
       _handleLocationError(e);
     }
   }
@@ -266,10 +280,10 @@ class _MerchantDetailPageState extends ConsumerState<MerchantDetailPage> with Wi
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
       }
-      
-      _hasLocationPermission = permission != LocationPermission.denied && 
-                              permission != LocationPermission.deniedForever;
-                              
+
+      _hasLocationPermission = permission != LocationPermission.denied &&
+          permission != LocationPermission.deniedForever;
+
       if (!_hasLocationPermission) {
         Logger.log("DETAIL_PAGE - Step 6: Location permission denied");
         return false;
@@ -278,7 +292,8 @@ class _MerchantDetailPageState extends ConsumerState<MerchantDetailPage> with Wi
       Logger.log("DETAIL_PAGE - Step 6: Location status check passed");
       return true;
     } catch (e) {
-      Logger.error("DETAIL_PAGE - Step 6: Error checking location status", error: e);
+      Logger.error("DETAIL_PAGE - Step 6: Error checking location status",
+          error: e);
       return false;
     }
   }
@@ -286,12 +301,12 @@ class _MerchantDetailPageState extends ConsumerState<MerchantDetailPage> with Wi
   // STEP 6: NEW - Enable fallback mode when location unavailable
   void _enableFallbackMode() {
     Logger.log("DETAIL_PAGE - Step 6: Enabling fallback distance mode");
-    
+
     setState(() {
       _isUsingFallbackDistance = true;
       _isDistanceCalculating = false;
     });
-    
+
     // Show user feedback about fallback mode
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -308,15 +323,18 @@ class _MerchantDetailPageState extends ConsumerState<MerchantDetailPage> with Wi
   // STEP 6: NEW - Handle location-related errors
   void _handleLocationError(Object error) {
     _distanceCalculationFailures++;
-    Logger.error("DETAIL_PAGE - Step 6: Location error #$_distanceCalculationFailures", error: error);
-    
+    Logger.error(
+        "DETAIL_PAGE - Step 6: Location error #$_distanceCalculationFailures",
+        error: error);
+
     // If too many failures, switch to fallback mode
     if (_distanceCalculationFailures >= 3) {
-      Logger.log("DETAIL_PAGE - Step 6: Too many location failures, switching to fallback mode");
+      Logger.log(
+          "DETAIL_PAGE - Step 6: Too many location failures, switching to fallback mode");
       _enableFallbackMode();
       return;
     }
-    
+
     // Try to recover after delay
     _scheduleLocationRetry();
   }
@@ -324,10 +342,12 @@ class _MerchantDetailPageState extends ConsumerState<MerchantDetailPage> with Wi
   // STEP 6: NEW - Schedule location retry with exponential backoff
   void _scheduleLocationRetry() {
     _retryTimer?.cancel();
-    
-    final retryDelay = Duration(seconds: 5 * _distanceCalculationFailures); // 5s, 10s, 15s
-    Logger.log("DETAIL_PAGE - Step 6: Scheduling location retry in ${retryDelay.inSeconds}s");
-    
+
+    final retryDelay =
+        Duration(seconds: 5 * _distanceCalculationFailures); // 5s, 10s, 15s
+    Logger.log(
+        "DETAIL_PAGE - Step 6: Scheduling location retry in ${retryDelay.inSeconds}s");
+
     _retryTimer = Timer(retryDelay, () {
       if (mounted && !_isUsingFallbackDistance) {
         Logger.log("DETAIL_PAGE - Step 6: Retrying location initialization");
@@ -340,13 +360,16 @@ class _MerchantDetailPageState extends ConsumerState<MerchantDetailPage> with Wi
   void _startUserLocationStream() {
     try {
       Logger.log("DETAIL_PAGE - Step 5: Starting user location stream");
-      
+
       // STEP 7: ENHANCED - Adaptive location settings based on app state
       final locationSettings = LocationSettings(
-        accuracy: _isAppInBackground ? LocationAccuracy.medium : LocationAccuracy.high,
-        distanceFilter: _isAppInBackground ? 20 : 10, // Less frequent updates in background
+        accuracy: _isAppInBackground
+            ? LocationAccuracy.medium
+            : LocationAccuracy.high,
+        distanceFilter:
+            _isAppInBackground ? 20 : 10, // Less frequent updates in background
       );
-      
+
       _userLocationSubscription = Geolocator.getPositionStream(
         locationSettings: locationSettings,
       ).listen(
@@ -354,26 +377,30 @@ class _MerchantDetailPageState extends ConsumerState<MerchantDetailPage> with Wi
           // STEP 7: NEW - Update cache on new location
           _cachedUserLocation = position;
           _lastLocationUpdate = DateTime.now();
-          
+
           _handleUserLocationUpdate(position);
         },
         onError: (error) {
-          Logger.error("DETAIL_PAGE - Step 6: User location stream error", error: error);
+          Logger.error("DETAIL_PAGE - Step 6: User location stream error",
+              error: error);
           _handleLocationError(error);
         },
       );
-      
-      Logger.log("DETAIL_PAGE - Step 7: User location stream started with adaptive settings");
+
+      Logger.log(
+          "DETAIL_PAGE - Step 7: User location stream started with adaptive settings");
     } catch (e) {
-      Logger.error("DETAIL_PAGE - Step 6: Error starting user location stream", error: e);
+      Logger.error("DETAIL_PAGE - Step 6: Error starting user location stream",
+          error: e);
       _handleLocationError(e);
     }
   }
 
   // STEP 5: NEW - Handle user location updates
   void _handleUserLocationUpdate(Position newPosition) {
-    Logger.log("DETAIL_PAGE - Step 5: User location updated: ${newPosition.latitude}, ${newPosition.longitude}");
-    
+    Logger.log(
+        "DETAIL_PAGE - Step 5: User location updated: ${newPosition.latitude}, ${newPosition.longitude}");
+
     // Calculate distance moved
     if (_currentUserLocation != null) {
       final distanceMoved = Geolocator.distanceBetween(
@@ -382,15 +409,17 @@ class _MerchantDetailPageState extends ConsumerState<MerchantDetailPage> with Wi
         newPosition.latitude,
         newPosition.longitude,
       );
-      
-      Logger.log("DETAIL_PAGE - Step 5: User moved ${distanceMoved.toStringAsFixed(2)} meters");
-      
+
+      Logger.log(
+          "DETAIL_PAGE - Step 5: User moved ${distanceMoved.toStringAsFixed(2)} meters");
+
       // STEP 5: UPDATED - Use 20 meter threshold (consistent with LiveTrackingMap)
       if (distanceMoved > 20) {
         _currentUserLocation = newPosition;
         _scheduleDistanceRecalculation();
       } else {
-        Logger.log("DETAIL_PAGE - Step 5: Movement below 20m threshold, skipping recalculation");
+        Logger.log(
+            "DETAIL_PAGE - Step 5: Movement below 20m threshold, skipping recalculation");
       }
     } else {
       _currentUserLocation = newPosition;
@@ -404,17 +433,18 @@ class _MerchantDetailPageState extends ConsumerState<MerchantDetailPage> with Wi
     if (_shouldSkipCalculation()) {
       return;
     }
-    
+
     // Cancel previous timer if exists
     _distanceRecalculationTimer?.cancel();
-    
+
     // STEP 7: ENHANCED - Adaptive debounce delay based on app state
-    final debounceDelay = _isAppInBackground 
-        ? Duration(seconds: 10)  // Longer delay in background
-        : Duration(seconds: 2);  // Normal delay in foreground
-    
-    Logger.log("DETAIL_PAGE - Step 7: Scheduling distance recalculation in ${debounceDelay.inSeconds}s (background: $_isAppInBackground)");
-    
+    final debounceDelay = _isAppInBackground
+        ? Duration(seconds: 10) // Longer delay in background
+        : Duration(seconds: 2); // Normal delay in foreground
+
+    Logger.log(
+        "DETAIL_PAGE - Step 7: Scheduling distance recalculation in ${debounceDelay.inSeconds}s (background: $_isAppInBackground)");
+
     // Schedule recalculation with adaptive delay for debouncing
     _distanceRecalculationTimer = Timer(debounceDelay, () {
       if (mounted) {
@@ -426,55 +456,63 @@ class _MerchantDetailPageState extends ConsumerState<MerchantDetailPage> with Wi
   // STEP 5: NEW - Recalculate distance when user moves
   Future<void> _recalculateDistanceFromUserMovement() async {
     if (_currentUserLocation == null || _lastKnownMerchant == null) {
-      Logger.log("DETAIL_PAGE - Step 5: Cannot recalculate - missing user location or merchant data");
+      Logger.log(
+          "DETAIL_PAGE - Step 5: Cannot recalculate - missing user location or merchant data");
       return;
     }
-    
+
     final merchant = _lastKnownMerchant!;
     if (merchant.merchantLocLat == null || merchant.merchantLocLong == null) {
-      Logger.log("DETAIL_PAGE - Step 5: Cannot recalculate - merchant has no location");
+      Logger.log(
+          "DETAIL_PAGE - Step 5: Cannot recalculate - merchant has no location");
       return;
     }
-    
+
     try {
-      Logger.log("DETAIL_PAGE - Step 5: Recalculating distance due to user movement");
-      
+      Logger.log(
+          "DETAIL_PAGE - Step 5: Recalculating distance due to user movement");
+
       setState(() {
         _isDistanceCalculating = true;
       });
-      
+
       // STEP 7: NEW - Record calculation time for performance tracking
       _lastDistanceCalculation = DateTime.now();
-      
+
       // Calculate new distance
       final distance = Geolocator.distanceBetween(
-        _currentUserLocation!.latitude,
-        _currentUserLocation!.longitude,
-        merchant.merchantLocLat!,
-        merchant.merchantLocLong!,
-      ) / 1000; // Convert to kilometers
-      
-      Logger.log("DETAIL_PAGE - Step 7: Distance calculated (background: $_isAppInBackground): ${distance.toStringAsFixed(4)} km");
-      
+            _currentUserLocation!.latitude,
+            _currentUserLocation!.longitude,
+            merchant.merchantLocLat!,
+            merchant.merchantLocLong!,
+          ) /
+          1000; // Convert to kilometers
+
+      Logger.log(
+          "DETAIL_PAGE - Step 7: Distance calculated (background: $_isAppInBackground): ${distance.toStringAsFixed(4)} km");
+
       // Update state
       if (mounted) {
         setState(() {
           _currentDistance = distance;
           _isDistanceCalculating = false;
-          
+
           // STEP 6: NEW - Reset error state on successful calculation
           _distanceCalculationFailures = 0;
           _isUsingFallbackDistance = false;
         });
-        
-        Logger.log("DETAIL_PAGE - Step 5: Distance updated due to user movement");
+
+        Logger.log(
+            "DETAIL_PAGE - Step 5: Distance updated due to user movement");
       }
     } catch (e) {
-      Logger.error("DETAIL_PAGE - Step 6: Error recalculating distance from user movement", error: e);
-      
+      Logger.error(
+          "DETAIL_PAGE - Step 6: Error recalculating distance from user movement",
+          error: e);
+
       // STEP 6: NEW - Handle calculation error
       _handleLocationError(e);
-      
+
       if (mounted) {
         setState(() {
           _isDistanceCalculating = false;
@@ -489,23 +527,25 @@ class _MerchantDetailPageState extends ConsumerState<MerchantDetailPage> with Wi
 
   // STEP 4: NEW - Distance update callback handler
   void _handleDistanceUpdate(double? newDistance) {
-    Logger.log("DETAIL_PAGE - Step 4: Distance update received: ${newDistance?.toStringAsFixed(4)} km");
-    
+    Logger.log(
+        "DETAIL_PAGE - Step 4: Distance update received: ${newDistance?.toStringAsFixed(4)} km");
+
     if (mounted) {
       setState(() {
         _currentDistance = newDistance;
         _isDistanceCalculating = false;
-        
+
         // STEP 6: NEW - Reset failure count on successful distance update
         if (newDistance != null) {
           _distanceCalculationFailures = 0;
           _isUsingFallbackDistance = false;
         }
       });
-      
+
       Logger.log("DETAIL_PAGE - Step 4: Distance state updated successfully");
     } else {
-      Logger.log("DETAIL_PAGE - Step 4: Widget not mounted, skipping distance update");
+      Logger.log(
+          "DETAIL_PAGE - Step 4: Widget not mounted, skipping distance update");
     }
   }
 
@@ -515,24 +555,27 @@ class _MerchantDetailPageState extends ConsumerState<MerchantDetailPage> with Wi
     if (_isUsingFallbackDistance && detailData != null) {
       final staticDistance = detailData['distance'] as double?;
       if (staticDistance != null) {
-        Logger.log("DETAIL_PAGE - Step 6: Using fallback static distance: ${staticDistance.toStringAsFixed(4)} km");
+        Logger.log(
+            "DETAIL_PAGE - Step 6: Using fallback static distance: ${staticDistance.toStringAsFixed(4)} km");
         return staticDistance;
       }
     }
-    
+
     // Prioritize live calculated distance over initial static distance
     if (_currentDistance != null) {
-      Logger.log("DETAIL_PAGE - Step 4: Using live distance: ${_currentDistance!.toStringAsFixed(4)} km");
+      Logger.log(
+          "DETAIL_PAGE - Step 4: Using live distance: ${_currentDistance!.toStringAsFixed(4)} km");
       return _currentDistance;
     }
-    
+
     // Fallback to initial calculated distance from ViewModel
     final staticDistance = detailData?['distance'] as double?;
     if (staticDistance != null) {
-      Logger.log("DETAIL_PAGE - Step 4: Using static distance: ${staticDistance.toStringAsFixed(4)} km");
+      Logger.log(
+          "DETAIL_PAGE - Step 4: Using static distance: ${staticDistance.toStringAsFixed(4)} km");
       return staticDistance;
     }
-    
+
     Logger.log("DETAIL_PAGE - Step 4: No distance available");
     return null;
   }
@@ -546,7 +589,7 @@ class _MerchantDetailPageState extends ConsumerState<MerchantDetailPage> with Wi
       Logger.log("MAP_INTERACTION - Parent scroll disabled");
     }
   }
-  
+
   void _enableParentScroll() {
     if (_isMapInteracting) {
       setState(() {
@@ -556,35 +599,38 @@ class _MerchantDetailPageState extends ConsumerState<MerchantDetailPage> with Wi
     }
   }
 
-  Future<void> _openInGoogleMaps(double latitude, double longitude, String? merchantName) async {
+  Future<void> _openInGoogleMaps(
+      double latitude, double longitude, String? merchantName) async {
     try {
       Logger.log("Opening location in Google Maps: $latitude, $longitude");
-      
+
       String url;
       if (Platform.isIOS) {
         url = "comgooglemaps://?center=$latitude,$longitude&zoom=16";
-        
+
         if (!await canLaunchUrl(Uri.parse(url))) {
           url = "http://maps.apple.com/?q=$latitude,$longitude";
         }
       } else {
-        url = "geo:$latitude,$longitude?q=$latitude,$longitude(${merchantName ?? 'Merchant'})";
+        url =
+            "geo:$latitude,$longitude?q=$latitude,$longitude(${merchantName ?? 'Merchant'})";
       }
 
       final uri = Uri.parse(url);
-      
+
       if (await canLaunchUrl(uri)) {
         await launchUrl(uri, mode: LaunchMode.externalApplication);
         Logger.log("Successfully opened Google Maps");
       } else {
-        final webUrl = "https://www.google.com/maps/search/?api=1&query=$latitude,$longitude";
-        await launchUrl(Uri.parse(webUrl), mode: LaunchMode.externalApplication);
+        final webUrl =
+            "https://www.google.com/maps/search/?api=1&query=$latitude,$longitude";
+        await launchUrl(Uri.parse(webUrl),
+            mode: LaunchMode.externalApplication);
         Logger.log("Opened web Google Maps as fallback");
       }
-      
     } catch (e) {
       Logger.error("Error opening Google Maps", error: e);
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -612,7 +658,7 @@ class _MerchantDetailPageState extends ConsumerState<MerchantDetailPage> with Wi
             success: (detailData) => _buildDetailContent(detailData),
             error: (error, message) => _buildErrorState(message),
           ),
-          
+
           // Floating controls - Always on top
           Positioned(
             top: MediaQuery.of(context).padding.top + 16,
@@ -632,13 +678,14 @@ class _MerchantDetailPageState extends ConsumerState<MerchantDetailPage> with Wi
                     onPressed: () => Navigator.pop(context),
                   ),
                 ),
-                
+
                 // Favorite Button
                 FavoriteButton.floating(
                   merchant: widget.merchant,
                   showFeedback: true,
                   onToggle: () {
-                    Logger.log("Favorite toggled for ${widget.merchant.merchantName}");
+                    Logger.log(
+                        "Favorite toggled for ${widget.merchant.merchantName}");
                   },
                 ),
               ],
@@ -663,14 +710,9 @@ class _MerchantDetailPageState extends ConsumerState<MerchantDetailPage> with Wi
         ),
         child: IconButton(
           onPressed: () {
-            Logger.log("Chat button clicked for ${widget.merchant.merchantName}");
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text("Fitur chat akan segera hadir!"),
-                backgroundColor: MyColor.orange,
-                duration: Duration(seconds: 2),
-              ),
-            );
+            Logger.log(
+                "Chat button clicked for ${widget.merchant.merchantName}");
+            _handleChatButtonPressed();
           },
           icon: Icon(
             Icons.chat,
@@ -685,13 +727,13 @@ class _MerchantDetailPageState extends ConsumerState<MerchantDetailPage> with Wi
 
   Widget _buildDetailContent(Map<String, dynamic> detailData) {
     final merchant = detailData['merchant'] as MerchantModel;
-    
+
     // STEP 5: NEW - Store current merchant for user location recalculation
     _lastKnownMerchant = merchant;
-    
+
     // STEP 4: NEW - Use _getDisplayDistance instead of direct access
     final distance = _getDisplayDistance(detailData);
-    
+
     final totalProducts = detailData['totalProducts'] as int;
     final hasLocation = detailData['hasLocation'] as bool;
     final priceRangeText = detailData['priceRangeText'] as String;
@@ -699,8 +741,8 @@ class _MerchantDetailPageState extends ConsumerState<MerchantDetailPage> with Wi
     return SingleChildScrollView(
       controller: _scrollController,
       // Smart scroll physics based on map interaction
-      physics: _isMapInteracting 
-          ? NeverScrollableScrollPhysics() 
+      physics: _isMapInteracting
+          ? NeverScrollableScrollPhysics()
           : AlwaysScrollableScrollPhysics(),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -709,7 +751,8 @@ class _MerchantDetailPageState extends ConsumerState<MerchantDetailPage> with Wi
           SizedBox(
             height: 300,
             width: double.infinity,
-            child: merchant.merchantImgUrl != null && merchant.merchantImgUrl!.isNotEmpty
+            child: merchant.merchantImgUrl != null &&
+                    merchant.merchantImgUrl!.isNotEmpty
                 ? Image.network(
                     merchant.merchantImgUrl!,
                     fit: BoxFit.cover,
@@ -748,7 +791,8 @@ class _MerchantDetailPageState extends ConsumerState<MerchantDetailPage> with Wi
                       const SizedBox(height: 8),
 
                       // Categories
-                      if (merchant.merchantCategory != null && merchant.merchantCategory!.isNotEmpty) ...[
+                      if (merchant.merchantCategory != null &&
+                          merchant.merchantCategory!.isNotEmpty) ...[
                         Wrap(
                           spacing: 8,
                           runSpacing: 4,
@@ -803,9 +847,9 @@ class _MerchantDetailPageState extends ConsumerState<MerchantDetailPage> with Wi
                               ),
                             ),
                           ),
-                          
+
                           const SizedBox(width: 8),
-                          
+
                           // Location Update Indicator
                           StreamBuilder<DocumentSnapshot>(
                             stream: FirebaseFirestore.instance
@@ -815,32 +859,39 @@ class _MerchantDetailPageState extends ConsumerState<MerchantDetailPage> with Wi
                             builder: (context, snapshot) {
                               DateTime lastUpdate = DateTime.now();
                               ConnectionStatus status = ConnectionStatus.live;
-                              
+
                               if (snapshot.hasError) {
                                 status = ConnectionStatus.offline;
-                                lastUpdate = DateTime.now().subtract(Duration(minutes: 10));
-                              } else if (!snapshot.hasData || !snapshot.data!.exists) {
+                                lastUpdate = DateTime.now()
+                                    .subtract(Duration(minutes: 10));
+                              } else if (!snapshot.hasData ||
+                                  !snapshot.data!.exists) {
                                 status = ConnectionStatus.offline;
-                                lastUpdate = DateTime.now().subtract(Duration(minutes: 5));
-                              } else if (snapshot.connectionState == ConnectionState.waiting) {
+                                lastUpdate = DateTime.now()
+                                    .subtract(Duration(minutes: 5));
+                              } else if (snapshot.connectionState ==
+                                  ConnectionState.waiting) {
                                 status = ConnectionStatus.recent;
-                                lastUpdate = DateTime.now().subtract(Duration(seconds: 30));
+                                lastUpdate = DateTime.now()
+                                    .subtract(Duration(seconds: 30));
                               } else {
-                                final data = snapshot.data!.data() as Map<String, dynamic>?;
+                                final data = snapshot.data!.data()
+                                    as Map<String, dynamic>?;
                                 if (data != null) {
                                   final lat = data['merchantLocLat'];
                                   final lng = data['merchantLocLong'];
-                                  
+
                                   if (lat != null && lng != null) {
                                     status = ConnectionStatus.live;
                                     lastUpdate = DateTime.now();
                                   } else {
                                     status = ConnectionStatus.recent;
-                                    lastUpdate = DateTime.now().subtract(Duration(minutes: 1));
+                                    lastUpdate = DateTime.now()
+                                        .subtract(Duration(minutes: 1));
                                   }
                                 }
                               }
-                              
+
                               return LocationUpdateIndicator(
                                 lastUpdate: lastUpdate,
                                 status: status,
@@ -870,7 +921,7 @@ class _MerchantDetailPageState extends ConsumerState<MerchantDetailPage> with Wi
                     onTapUp: (_) => _enableParentScroll(),
                     onTapCancel: () => _enableParentScroll(),
                     child: SizedBox(
-                      height: 250,                       
+                      height: 250,
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(12),
                         child: LiveTrackingMap(
@@ -929,13 +980,14 @@ class _MerchantDetailPageState extends ConsumerState<MerchantDetailPage> with Wi
                                   ],
                                 ),
                               ),
-                              
+
                               // Divider
                               Container(
                                 height: 40,
                                 width: 1,
                                 color: MyColor.orange,
-                                margin: const EdgeInsets.symmetric(horizontal: 12),
+                                margin:
+                                    const EdgeInsets.symmetric(horizontal: 12),
                               ),
 
                               // STEP 4: ENHANCED - Distance with live updates and loading state
@@ -945,7 +997,8 @@ class _MerchantDetailPageState extends ConsumerState<MerchantDetailPage> with Wi
                                   children: [
                                     // Distance value with loading indicator
                                     Row(
-                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
                                       children: [
                                         if (_isDistanceCalculating) ...[
                                           SizedBox(
@@ -953,7 +1006,9 @@ class _MerchantDetailPageState extends ConsumerState<MerchantDetailPage> with Wi
                                             height: 12,
                                             child: CircularProgressIndicator(
                                               strokeWidth: 2,
-                                              valueColor: AlwaysStoppedAnimation<Color>(MyColor.orange),
+                                              valueColor:
+                                                  AlwaysStoppedAnimation<Color>(
+                                                      MyColor.orange),
                                             ),
                                           ),
                                           const SizedBox(width: 6),
@@ -965,8 +1020,8 @@ class _MerchantDetailPageState extends ConsumerState<MerchantDetailPage> with Wi
                                           style: TextStyle(
                                             fontSize: 14,
                                             fontWeight: FontWeight.w600,
-                                            color: distance != null 
-                                                ? MyColor.blackPlain 
+                                            color: distance != null
+                                                ? MyColor.blackPlain
                                                 : Colors.grey[400],
                                           ),
                                           textAlign: TextAlign.center,
@@ -975,35 +1030,39 @@ class _MerchantDetailPageState extends ConsumerState<MerchantDetailPage> with Wi
                                     ),
                                     const SizedBox(height: 4),
                                     Row(
-                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
                                       children: [
                                         Text(
                                           "Jarak",
                                           style: TextStyle(
                                             fontSize: 12,
-                                            color: distance != null 
-                                                ? MyColor.orange 
+                                            color: distance != null
+                                                ? MyColor.orange
                                                 : Colors.grey[400],
                                             fontWeight: FontWeight.w500,
                                           ),
                                           textAlign: TextAlign.center,
                                         ),
                                         // STEP 6: ENHANCED - Show appropriate indicator based on mode
-                                        if (distance != null && !_isDistanceCalculating) ...[
+                                        if (distance != null &&
+                                            !_isDistanceCalculating) ...[
                                           const SizedBox(width: 4),
                                           Container(
                                             width: 6,
                                             height: 6,
                                             decoration: BoxDecoration(
-                                              color: _isUsingFallbackDistance 
-                                                  ? Colors.orange  // Fallback mode
-                                                  : Colors.green,  // Live mode
+                                              color: _isUsingFallbackDistance
+                                                  ? Colors
+                                                      .orange // Fallback mode
+                                                  : Colors.green, // Live mode
                                               shape: BoxShape.circle,
                                             ),
                                           ),
                                         ],
                                         // STEP 6: NEW - Show error indicator if location issues
-                                        if (!_hasLocationPermission || !_isLocationServiceEnabled) ...[
+                                        if (!_hasLocationPermission ||
+                                            !_isLocationServiceEnabled) ...[
                                           const SizedBox(width: 4),
                                           Icon(
                                             Icons.location_off,
@@ -1020,7 +1079,7 @@ class _MerchantDetailPageState extends ConsumerState<MerchantDetailPage> with Wi
                           ),
                         ),
                       ),
-                      
+
                       const SizedBox(width: 5),
 
                       // Google Maps Button
@@ -1044,8 +1103,9 @@ class _MerchantDetailPageState extends ConsumerState<MerchantDetailPage> with Wi
                                 children: [
                                   Expanded(
                                     child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
                                         Text(
                                           "Buka di",
                                           style: TextStyle(
@@ -1065,7 +1125,6 @@ class _MerchantDetailPageState extends ConsumerState<MerchantDetailPage> with Wi
                                       ],
                                     ),
                                   ),
-                                  
                                   SizedBox(
                                     width: 40,
                                     height: 40,
@@ -1091,7 +1150,8 @@ class _MerchantDetailPageState extends ConsumerState<MerchantDetailPage> with Wi
                 const SizedBox(height: 20),
 
                 // Description
-                if (merchant.merchantDesc != null && merchant.merchantDesc!.isNotEmpty) ...[
+                if (merchant.merchantDesc != null &&
+                    merchant.merchantDesc!.isNotEmpty) ...[
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 20),
                     child: Column(
@@ -1137,8 +1197,10 @@ class _MerchantDetailPageState extends ConsumerState<MerchantDetailPage> with Wi
                       const SizedBox(height: 12),
 
                       // Products List
-                      if (merchant.products != null && merchant.products!.isNotEmpty)
-                        ...merchant.products!.map((product) => _buildProductItem(product))
+                      if (merchant.products != null &&
+                          merchant.products!.isNotEmpty)
+                        ...merchant.products!
+                            .map((product) => _buildProductItem(product))
                       else
                         Container(
                           padding: const EdgeInsets.all(20),
@@ -1179,19 +1241,17 @@ class _MerchantDetailPageState extends ConsumerState<MerchantDetailPage> with Wi
 
   /// Format price range to use "k" for thousands
   String _formatPriceRange(String priceRangeText) {
-    return priceRangeText
-        .replaceAllMapped(RegExp(r'(\d+)\.000'), (match) {
-          return '${match.group(1)}k';
-        })
-        .replaceAllMapped(RegExp(r'(\d+)\.(\d+)00'), (match) {
-          String beforeDot = match.group(1)!;
-          String afterDot = match.group(2)!;
-          if (afterDot == '0') {
-            return '${beforeDot}k';
-          } else {
-            return '$beforeDot.${afterDot}k';
-          }
-        });
+    return priceRangeText.replaceAllMapped(RegExp(r'(\d+)\.000'), (match) {
+      return '${match.group(1)}k';
+    }).replaceAllMapped(RegExp(r'(\d+)\.(\d+)00'), (match) {
+      String beforeDot = match.group(1)!;
+      String afterDot = match.group(2)!;
+      if (afterDot == '0') {
+        return '${beforeDot}k';
+      } else {
+        return '$beforeDot.${afterDot}k';
+      }
+    });
   }
 
   Widget _buildProductItem(Product product) {
@@ -1251,8 +1311,8 @@ class _MerchantDetailPageState extends ConsumerState<MerchantDetailPage> with Wi
   Widget _buildLoadingState() {
     return SingleChildScrollView(
       controller: _scrollController,
-      physics: _isMapInteracting 
-          ? NeverScrollableScrollPhysics() 
+      physics: _isMapInteracting
+          ? NeverScrollableScrollPhysics()
           : AlwaysScrollableScrollPhysics(),
       child: Column(
         children: [
@@ -1265,7 +1325,6 @@ class _MerchantDetailPageState extends ConsumerState<MerchantDetailPage> with Wi
               color: Colors.white,
             ),
           ),
-          
           Padding(
             padding: const EdgeInsets.all(20),
             child: Shimmer.fromColors(
@@ -1349,7 +1408,8 @@ class _MerchantDetailPageState extends ConsumerState<MerchantDetailPage> with Wi
               const SizedBox(height: 24),
               ElevatedButton.icon(
                 onPressed: () {
-                  final notifier = ref.read(merchantDetailViewModelProvider.notifier);
+                  final notifier =
+                      ref.read(merchantDetailViewModelProvider.notifier);
                   notifier.refreshMerchantDetail(widget.merchant);
                 },
                 icon: Icon(Icons.refresh),
@@ -1391,4 +1451,94 @@ class _MerchantDetailPageState extends ConsumerState<MerchantDetailPage> with Wi
       ),
     );
   }
+
+  void _handleChatButtonPressed() async {
+  try {
+    Logger.log("MERCHANT_DETAIL - Starting chat with: ${widget.merchant.merchantName}");
+    
+    // Show loading indicator
+    Loading.show(context);
+    
+    // Start chat using the chat actions viewmodel
+    final conversationId = await ref.read(chatActionsViewModelProvider.notifier)
+        .startChat(widget.merchant);
+    
+    Loading.hide();
+    
+    if (conversationId != null && mounted) {
+      // Navigate to chat detail page
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => ChatDetailPage(
+            conversationId: conversationId,
+          ),
+        ),
+      );
+      
+      Logger.log("MERCHANT_DETAIL - Chat opened successfully: $conversationId");
+      
+      // Optional: Show success feedback
+      _showChatSuccessMessage("Chat dengan ${widget.merchant.merchantName} dimulai");
+      
+    } else {
+      _showChatErrorMessage("Gagal memulai chat dengan ${widget.merchant.merchantName}");
+    }
+    
+  } catch (e) {
+    Loading.hide();
+    Logger.error("MERCHANT_DETAIL - Error starting chat", error: e);
+    
+    // Show user-friendly error message
+    if (e.toString().contains('authenticated')) {
+      _showChatErrorMessage("Silakan login terlebih dahulu untuk memulai chat");
+    } else {
+      _showChatErrorMessage("Gagal memulai chat. Silakan coba lagi.");
+    }
+  }
+}
+
+  void _showChatSuccessMessage(String message) {
+  if (mounted) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Icon(Icons.check_circle, color: Colors.white, size: 20),
+            SizedBox(width: 8),
+            Expanded(child: Text(message)),
+          ],
+        ),
+        backgroundColor: Colors.green,
+        duration: Duration(seconds: 2),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+}
+
+/// Show error message for chat
+void _showChatErrorMessage(String message) {
+  if (mounted) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Icon(Icons.error_outline, color: Colors.white, size: 20),
+            SizedBox(width: 8),
+            Expanded(child: Text(message)),
+          ],
+        ),
+        backgroundColor: MyColor.red,
+        duration: Duration(seconds: 3),
+        behavior: SnackBarBehavior.floating,
+        action: SnackBarAction(
+          label: 'Coba Lagi',
+          textColor: Colors.white,
+          onPressed: _handleChatButtonPressed,
+        ),
+      ),
+    );
+  }
+}
 }

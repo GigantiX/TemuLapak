@@ -6,6 +6,7 @@ import 'package:temulapak_app/utils/loading/loading.dart';
 import 'package:temulapak_app/utils/logger.dart';
 import 'package:temulapak_app/utils/network_checker.dart';
 import 'package:temulapak_app/view/help_centre_page/help_center_page.dart';
+import 'package:temulapak_app/view/merchant_dashboard_page/merchant_dashboard_page.dart';
 import 'package:temulapak_app/view/profile_page/profile_viewmodel.dart';
 import 'package:temulapak_app/view/faq_page/faq_page.dart';
 import 'package:temulapak_app/view/about_page/about_page.dart';
@@ -36,107 +37,116 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
     return Scaffold(
       backgroundColor: MyColor.orange,
       body: SafeArea(
-        child: Column(
-          children: [
-            Container(
-              height: 250,
-              width: double.infinity,
-              decoration: BoxDecoration(
-                color: MyColor.orange,
-              ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      shape: BoxShape.circle,
-                    ),
-                    child: CircleAvatar(
-                      radius: 45,
-                      backgroundImage: userState.maybeWhen(
-                        success: (user) => user.photoURL != null
-                            ? NetworkImage(user.photoURL!)
-                            : const AssetImage(
-                                    "lib/assets/images/thumbnail.jpeg")
-                                as ImageProvider,
-                        orElse: () => const AssetImage(
-                            "lib/assets/images/thumbnail.jpeg"),
+        child: CustomScrollView(
+          slivers: [
+            // Profile Header as SliverToBoxAdapter
+            SliverToBoxAdapter(
+              child: Container(
+                height: 250,
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: MyColor.orange,
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                      ),
+                      child: CircleAvatar(
+                        radius: 45,
+                        backgroundImage: userState.maybeWhen(
+                          success: (user) => user.photoURL != null
+                              ? NetworkImage(user.photoURL!)
+                              : const AssetImage(
+                                      "lib/assets/images/thumbnail.jpeg")
+                                  as ImageProvider,
+                          orElse: () => const AssetImage(
+                              "lib/assets/images/thumbnail.jpeg"),
+                        ),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    userState.maybeWhen(
-                      success: (user) => user.displayName ?? "User Name",
-                      orElse: () => "User Name",
-                    ),
-                    style: const TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
+                    const SizedBox(height: 16),
+                    Text(
                       userState.maybeWhen(
-                        success: (user) => user.email ?? "user@email.com",
-                        orElse: () => "user@email.com",
+                        success: (user) => user.displayName ?? "User Name",
+                        orElse: () => "User Name",
                       ),
                       style: const TextStyle(
-                        fontSize: 14,
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
                         color: Colors.white,
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 10),
-                  userState.maybeWhen(
-                    success: (user) => user.isMerchant == true
-                        ? Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 12, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  Icons.storefront,
-                                  size: 16,
-                                  color: MyColor.orange,
-                                ),
-                                const SizedBox(width: 4),
-                                Text(
-                                  "Penjual Aktif",
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w600,
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        userState.maybeWhen(
+                          success: (user) => user.email ?? "user@email.com",
+                          orElse: () => "user@email.com",
+                        ),
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    userState.maybeWhen(
+                      success: (user) => user.isMerchant == true
+                          ? Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.storefront,
+                                    size: 16,
                                     color: MyColor.orange,
                                   ),
-                                ),
-                              ],
-                            ),
-                          )
-                        : const SizedBox.shrink(),
-                    orElse: () => const SizedBox.shrink(),
-                  ),
-                  SizedBox(height: 5),
-                ],
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    "Penjual Aktif",
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                      color: MyColor.orange,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            )
+                          : const SizedBox.shrink(),
+                      orElse: () => const SizedBox.shrink(),
+                    ),
+                    const SizedBox(height: 5),
+                  ],
+                ),
               ),
             ),
-            Expanded(
+
+            // Main Content as SliverToBoxAdapter for scrollable content
+            SliverToBoxAdapter(
               child: Container(
                 width: double.infinity,
+                // FIXED: Remove fixed height constraints - let content determine height
+                constraints: BoxConstraints(
+                  minHeight: MediaQuery.of(context).size.height * 0.6,
+                ),
                 decoration: const BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.only(
@@ -147,8 +157,11 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                 child: Padding(
                   padding: const EdgeInsets.all(20),
                   child: Column(
+                    mainAxisSize: MainAxisSize.min, // FIXED: Allow column to size itself
                     children: [
                       const SizedBox(height: 20),
+                      
+                      // Merchant Page Button
                       Container(
                         width: double.infinity,
                         height: 60,
@@ -172,19 +185,57 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                               Logger.log("Tapped on Merchant Page");
                               Loading.show(context);
 
-                              Future.delayed(Duration(milliseconds: 100), () {
-                                if (!context.mounted) return;
-                                Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) =>
-                                          RegisterMerchantPage(),
-                                    )).then((_) {
-                                  Loading.hide();
-                                });
-
-                                Loading.hide();
-                              });
+                              userState.maybeWhen(
+                                success: (user) {
+                                  if (user.isMerchant == true) {
+                                    Logger.log(
+                                        "User is a merchant, navigating to MerchantDashboardPage");
+                                    Future.delayed(Duration(milliseconds: 100),
+                                        () {
+                                      if (!context.mounted) return;
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) =>
+                                              MerchantDashboardPage(),
+                                        ),
+                                      ).then((_) {
+                                        Loading.hide();
+                                      });
+                                    });
+                                  } else {
+                                    Loading.hide();
+                                    Logger.log(
+                                        "User is not a merchant, navigating to RegisterMerchantPage");
+                                    Future.delayed(Duration(milliseconds: 100),
+                                        () {
+                                      if (!context.mounted) return;
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) =>
+                                              RegisterMerchantPage(),
+                                        ),
+                                      ).then((_) {});
+                                    });
+                                  }
+                                },
+                                orElse: () {
+                                  Logger.error("User data not available");
+                                  Future.delayed(Duration(milliseconds: 100),
+                                      () {
+                                    Loading.hide();
+                                    if (!context.mounted) return;
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                            'Unable to access merchant page'),
+                                        backgroundColor: Colors.red,
+                                      ),
+                                    );
+                                  });
+                                },
+                              );
                             },
                             child: const Padding(
                               padding: EdgeInsets.symmetric(horizontal: 20),
@@ -216,6 +267,8 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                           ),
                         ),
                       ),
+
+                      // Menu Items
                       _buildMenuItem(
                         icon: Icons.help_outline,
                         title: "FAQ",
@@ -303,6 +356,9 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                           );
                         },
                       ),
+
+                      // Version text
+                      const SizedBox(height: 20),
                       Text(
                         "TemuLapak v1.0.0",
                         style: TextStyle(
@@ -310,6 +366,9 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                           color: Colors.grey[500],
                         ),
                       ),
+
+                      // FIXED: Add bottom padding for better scrolling experience
+                      const SizedBox(height: 20),
                     ],
                   ),
                 ),

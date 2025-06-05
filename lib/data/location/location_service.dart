@@ -1,13 +1,13 @@
 import 'package:geolocator/geolocator.dart';
 import 'package:temulapak_app/utils/logger.dart';
 
-class LocationServices {
-  static final LocationServices _instance = LocationServices._internal();
-  static LocationServices get instance => _instance;
+class LocationService {
+  static final LocationService _instance = LocationService._internal();
+  static LocationService get instance => _instance;
 
-  factory LocationServices() => _instance;
+  factory LocationService() => _instance;
 
-  LocationServices._internal();
+  LocationService._internal();
 
   Future<bool> checkPermission() async {
     bool serviceEnabled;
@@ -36,11 +36,9 @@ class LocationServices {
     try {
       Logger.log("Testing precise location");
       Position position = await Geolocator.getCurrentPosition(
-        locationSettings: const LocationSettings(
-          accuracy: LocationAccuracy.high,
-          timeLimit: Duration(seconds: 5)
-        )
-      );
+          locationSettings: const LocationSettings(
+              accuracy: LocationAccuracy.high,
+              timeLimit: Duration(seconds: 5)));
 
       //Calculate location accuracy
       double accuracy = position.accuracy;

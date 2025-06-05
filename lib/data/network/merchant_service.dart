@@ -455,4 +455,162 @@ class MerchantService {
   Map<String, dynamic> getGeoServiceStatus() {
     return _geoService.getServiceStats();
   }
+
+  Future<MerchantModel> getUserMerchant() async {
+    try {
+      final uid = userService.getCurrentUID();
+      if (uid == null) {
+        Logger.error("User not authenticated");
+        throw Exception("User not authenticated");
+      }
+
+      final merchantId = "MRCN_$uid";
+      Logger.log("Fetching merchant data for: $merchantId");
+
+      final merchantDoc = await _merchantCollection.doc(merchantId).get();
+      
+      if (!merchantDoc.exists) {
+        Logger.error("Merchant profile not found for user: $uid");
+        throw Exception("Merchant profile not found");
+      }
+
+      final merchantData = merchantDoc.data() as Map<String, dynamic>;
+      
+      // Fetch products subcollection
+      final productsSnapshot = await merchantDoc.reference.collection('products').get();
+      final products = productsSnapshot.docs.map((doc) {
+        final data = doc.data();
+        return Product.fromMap(data);
+      }).toList();
+
+      // Add products to merchant data
+      merchantData['products'] = products.map((p) => p.toMap()).toList();
+
+      Logger.log("Merchant data fetched successfully");
+      return MerchantModel.fromMap(merchantData);
+    } catch (e) {
+      Logger.error("Error fetching merchant data: $e");
+      rethrow;
+    }
+  }
+
+  // UPDATE METHOD - Update merchant status (open/close)
+  Future<void> updateMerchantStatus(bool isOpen) async {
+    try {
+      final uid = userService.getCurrentUID();
+      if (uid == null) {
+        Logger.error("User not authenticated");
+        throw Exception("User not authenticated");
+      }
+
+      final merchantId = "MRCN_$uid";
+      Logger.log("Updating merchant status for: $merchantId to $isOpen");
+
+      await _merchantCollection.doc(merchantId).update({
+        'merchantStatus': isOpen,
+      });
+
+      Logger.log("Merchant status updated successfully");
+    } catch (e) {
+      Logger.error("Error updating merchant status: $e");
+      rethrow;
+    }
+  }
+
+  // UPDATE METHOD - Update merchant location
+  Future<void> updateMerchantLocation(double lat, double lng) async {
+    try {
+      final uid = userService.getCurrentUID();
+      if (uid == null) {
+        Logger.error("User not authenticated");
+        throw Exception("User not authenticated");
+      }
+
+      final merchantId = "MRCN_$uid";
+      Logger.log("Updating merchant location for: $merchantId");
+
+      final geoPoint = GeoFirePoint(GeoPoint(lat, lng));
+
+      await _merchantCollection.doc(merchantId).update({
+        'merchantLocLat': lat,
+        'merchantLocLong': lng,
+        'geoPoint': geoPoint.data,
+      });
+
+      Logger.log("Merchant location updated successfully");
+    } catch (e) {
+      Logger.error("Error updating merchant location: $e");
+      rethrow;
+    }
+  }
+
+  // Add this method to your existing MerchantService class
+
+  Future<void> updateMerchantProfileOnly(MerchantModel merchant) async {
+    try {
+      Logger.log("MS - Starting merchant profile-only update process");
+      final uid = userService.getCurrentUID();
+
+      if (uid == null) {
+        Logger.error("User not authenticated");
+        throw Exception("User not authenticated");
+      }
+
+      final merchantId = "MRCN_$uid";
+      Logger.log("Updating merchant profile: $merchantId");
+
+      GeoFirePoint? geoPoint;
+      if (merchant.merchantLocLat != null && merchant.merchantLocLong != null) {
+        double lat = merchant.merchantLocLat!;
+        double long = merchant.merchantLocLong!;
+        geoPoint = GeoFirePoint(GeoPoint(lat, long));
+      }
+
+      Map<String, dynamic> merchantData = {
+        'uid': uid,
+        'merchantStatus': merchant.merchantStatus,
+        'merchantName': merchant.merchantName,
+        'merchantDesc': merchant.merchantDesc,
+        'merchantLocLat': merchant.merchantLocLat,
+        'merchantLocLong': merchant.merchantLocLong,
+        'merchantCategory': merchant.merchantCategory,
+        'merchantImgUrl': merchant.merchantImgUrl, // Keep existing image URL
+        'merchantPopularity': merchant.merchantPopularity,
+      };
+
+      if (merchant.merchantLocLat != null) {
+        merchantData['geoPoint'] = geoPoint?.data;
+      }
+
+      //batch for atomic operations
+      final batch = FirebaseFirestore.instance.batch();
+
+      final merchantRef = _merchantCollection.doc(merchantId);
+      batch.set(merchantRef, merchantData, SetOptions(merge: true));
+
+      if (merchant.products != null && merchant.products!.isNotEmpty) {
+        Logger.log("Updating products for merchant: $merchantId");
+
+        final existingProductsSnapshot =
+            await merchantRef.collection('products').get();
+
+        for (var doc in existingProductsSnapshot.docs) {
+          batch.delete(doc.reference);
+        }
+
+        Logger.log("Adding ${merchant.products!.length} products");
+        for (final product in merchant.products!) {
+          final productRef = merchantRef.collection('products').doc();
+          batch.set(productRef, product.toMap());
+        }
+      }
+
+      await batch.commit();
+
+      Logger.log("Merchant profile updated successfully (profile-only)");
+    } catch (e) {
+      Logger.error("Error in merchant profile-only update: $e");
+      rethrow;
+    }
+  }
 }
