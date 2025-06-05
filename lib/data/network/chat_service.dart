@@ -1,8 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:temulapak_app/data/network/user_service.dart';
+import 'package:temulapak_app/data/network/notification_service.dart';
 import 'package:temulapak_app/model/chat/conversation_model.dart';
 import 'package:temulapak_app/model/chat/message_model.dart';
 import 'package:temulapak_app/model/merchant/merchant_model.dart';
+import 'package:temulapak_app/model/notification/notification_payload.dart';
 import 'package:temulapak_app/utils/logger.dart';
 
 class ChatService {
@@ -13,6 +15,7 @@ class ChatService {
 
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final UserService _userService = UserService();
+  final NotificationService _notificationService = NotificationService.instance;
 
   // === CONVERSATION MANAGEMENT ===
 
@@ -198,7 +201,7 @@ class ChatService {
 
   // === MESSAGE MANAGEMENT ===
 
-  /// Send message with 350 character limit
+  /// Send message with 350 character limit and notification
   Future<void> sendMessage(String conversationId, String text, String senderId) async {
     try {
       // Validate message
@@ -226,9 +229,11 @@ class ChatService {
         isEdited: false,
       );
       
-      // Get receiver ID first
+      // Get receiver ID and sender name for notification
       final receiverId = await _getReceiverId(conversationId, senderId);
-      Logger.log("CHAT_SERVICE - Receiver ID: $receiverId");
+      final senderName = await _getSenderName(conversationId, senderId);
+      
+      Logger.log("CHAT_SERVICE - Receiver ID: $receiverId, Sender: $senderName");
       
       // Batch write for atomicity
       final batch = _firestore.batch();
@@ -261,9 +266,69 @@ class ChatService {
       await batch.commit();
       Logger.log("CHAT_SERVICE - Message sent successfully, unread updated for $receiverId");
       
+      // Send notification to receiver
+      await _sendNotificationToReceiver(
+        receiverId: receiverId,
+        senderId: senderId,
+        senderName: senderName,
+        message: text.trim(),
+        conversationId: conversationId,
+      );
+      
     } catch (e) {
       Logger.error("CHAT_SERVICE - Error sending message", error: e);
       rethrow;
+    }
+  }
+
+  /// Send notification to message receiver
+  Future<void> _sendNotificationToReceiver({
+    required String receiverId,
+    required String senderId,
+    required String senderName,
+    required String message,
+    required String conversationId,
+  }) async {
+    try {
+      Logger.log("CHAT_SERVICE - Sending notification to $receiverId");
+      
+      final notificationPayload = NotificationPayload(
+        receiverId: receiverId,
+        senderId: senderId,
+        senderName: senderName,
+        message: message,
+        conversationId: conversationId,
+      );
+      
+      await _notificationService.sendNotification(notificationPayload);
+      Logger.log("CHAT_SERVICE - Notification sent successfully");
+      
+    } catch (e) {
+      Logger.error("CHAT_SERVICE - Error sending notification", error: e);
+      // Don't rethrow - notification failure shouldn't fail message sending
+    }
+  }
+
+  /// Get sender name from conversation participants
+  Future<String> _getSenderName(String conversationId, String senderId) async {
+    try {
+      final doc = await _firestore.collection('conversations').doc(conversationId).get();
+      if (doc.exists) {
+        final data = doc.data()!;
+        final participantDetails = data['participantDetails'] as Map<String, dynamic>?;
+        
+        if (participantDetails != null && participantDetails.containsKey(senderId)) {
+          final senderDetail = participantDetails[senderId] as Map<String, dynamic>;
+          return senderDetail['name'] ?? 'Unknown';
+        }
+      }
+      
+      // Fallback to role-based name
+      return senderId.startsWith('MRCN_') ? 'Penjual' : 'Pembeli';
+      
+    } catch (e) {
+      Logger.error("CHAT_SERVICE - Error getting sender name", error: e);
+      return 'Unknown';
     }
   }
 
