@@ -10,6 +10,7 @@ import 'package:temulapak_app/view/home_page/home_viewmodel.dart';
 import 'package:temulapak_app/view/list_merchant_page/list_merchant_page.dart';
 import 'package:temulapak_app/view/list_merchant_page/list_merchant_viewmodel.dart';
 import 'package:temulapak_app/view/merchant_detail_page/merchant_detail_page.dart';
+import 'package:temulapak_app/view/notification_page/notification_page.dart';
 import 'package:temulapak_app/view/widget/merchant_widget.dart';
 
 class HomePage extends ConsumerStatefulWidget {
@@ -49,18 +50,20 @@ class _HomePageState extends ConsumerState<HomePage> {
   Future<void> _onRefresh() async {
     try {
       Logger.log("HOME_PAGE - Pull to refresh triggered");
-      
+
       // Refresh all data sources
       await Future.wait([
         ref.read(homeViewmodelProvider.notifier).getUser(),
         ref.read(addressViewModelProvider.notifier).getAddress(),
-        ref.read(recommendedMerchantsProvider.notifier).getRecommendedMerchants(),
+        ref
+            .read(recommendedMerchantsProvider.notifier)
+            .getRecommendedMerchants(),
       ]);
-      
+
       Logger.log("HOME_PAGE - Pull to refresh completed");
     } catch (e) {
       Logger.error("HOME_PAGE - Error during refresh", error: e);
-      
+
       // Show error message to user
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -120,23 +123,26 @@ class _HomePageState extends ConsumerState<HomePage> {
     // Get screen dimensions for responsive design
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
-    
+
     // Calculate responsive values based on screen size
     final isSmallScreen = screenWidth < 360;
     final isMediumScreen = screenWidth >= 360 && screenWidth < 400;
-    
+
     // Responsive padding
-    final horizontalPadding = isSmallScreen ? 16.0 : (isMediumScreen ? 20.0 : 25.0);
+    final horizontalPadding =
+        isSmallScreen ? 16.0 : (isMediumScreen ? 20.0 : 25.0);
     final verticalPadding = isSmallScreen ? 8.0 : 10.0;
-    
+
     // Responsive category item size
-    final categoryHeight = isSmallScreen ? 65.0 : (isMediumScreen ? 68.0 : 72.0);
+    final categoryHeight =
+        isSmallScreen ? 65.0 : (isMediumScreen ? 68.0 : 72.0);
     final iconSize = isSmallScreen ? 22.0 : (isMediumScreen ? 24.0 : 25.0);
     final fontSize = isSmallScreen ? 10.0 : (isMediumScreen ? 11.0 : 12.0);
     final spacing = isSmallScreen ? 6.0 : 8.0;
     final textSpacing = isSmallScreen ? 5.0 : 7.0;
-    
-    Logger.log("HOME_PAGE - Screen dimensions: ${screenWidth}x$screenHeight, isSmall: $isSmallScreen");
+
+    Logger.log(
+        "HOME_PAGE - Screen dimensions: ${screenWidth}x$screenHeight, isSmall: $isSmallScreen");
 
     return Container(
       width: double.infinity,
@@ -148,90 +154,90 @@ class _HomePageState extends ConsumerState<HomePage> {
         children: [
           Expanded(
             child: _buildResponsiveCategoryItem(
-              context: context,
-              icon: Icon(Icons.share_location, color: MyColor.orange, size: iconSize),
-              label: "Terdekat",
-              height: categoryHeight,
-              fontSize: fontSize,
-              spacing: textSpacing,
-              onTap: () {
-                Logger.log("Clicked on Terdekat");
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => ListMerchantPage(
-                      category: MerchantCategory.nearest,
+                context: context,
+                icon: Icon(Icons.share_location,
+                    color: MyColor.orange, size: iconSize),
+                label: "Terdekat",
+                height: categoryHeight,
+                fontSize: fontSize,
+                spacing: textSpacing,
+                onTap: () {
+                  Logger.log("Clicked on Terdekat");
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => ListMerchantPage(
+                        category: MerchantCategory.nearest,
+                      ),
                     ),
-                  ),
-                );
-              }
-            ),
+                  );
+                }),
           ),
           SizedBox(width: spacing),
           Expanded(
             child: _buildResponsiveCategoryItem(
-              context: context,
-              icon: FaIcon(FontAwesomeIcons.whiskeyGlass, color: MyColor.orange, size: iconSize),
-              label: "Minuman",
-              height: categoryHeight,
-              fontSize: fontSize,
-              spacing: textSpacing,
-              onTap: () {
-                Logger.log("Clicked on Minuman");
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => ListMerchantPage(
-                      category: MerchantCategory.drinks,
+                context: context,
+                icon: FaIcon(FontAwesomeIcons.whiskeyGlass,
+                    color: MyColor.orange, size: iconSize),
+                label: "Minuman",
+                height: categoryHeight,
+                fontSize: fontSize,
+                spacing: textSpacing,
+                onTap: () {
+                  Logger.log("Clicked on Minuman");
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => ListMerchantPage(
+                        category: MerchantCategory.drinks,
+                      ),
                     ),
-                  ),
-                );
-              }
-            ),
+                  );
+                }),
           ),
           SizedBox(width: spacing),
           Expanded(
             child: _buildResponsiveCategoryItem(
-              context: context,
-              icon: FaIcon(FontAwesomeIcons.bowlFood, color: MyColor.orange, size: iconSize),
-              label: "Makanan",
-              height: categoryHeight,
-              fontSize: fontSize,
-              spacing: textSpacing,
-              onTap: () {
-                Logger.log("Clicked on Makanan");
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => ListMerchantPage(
-                      category: MerchantCategory.food,
+                context: context,
+                icon: FaIcon(FontAwesomeIcons.bowlFood,
+                    color: MyColor.orange, size: iconSize),
+                label: "Makanan",
+                height: categoryHeight,
+                fontSize: fontSize,
+                spacing: textSpacing,
+                onTap: () {
+                  Logger.log("Clicked on Makanan");
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => ListMerchantPage(
+                        category: MerchantCategory.food,
+                      ),
                     ),
-                  ),
-                );
-              }
-            ),
+                  );
+                }),
           ),
           SizedBox(width: spacing),
           Expanded(
             child: _buildResponsiveCategoryItem(
-              context: context,
-              icon: FaIcon(FontAwesomeIcons.cookieBite, color: MyColor.orange, size: iconSize),
-              label: "Cemilan",
-              height: categoryHeight,
-              fontSize: fontSize,
-              spacing: textSpacing,
-              onTap: () {
-                Logger.log("Clicked on Cemilan");
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => ListMerchantPage(
-                      category: MerchantCategory.snacks,
+                context: context,
+                icon: FaIcon(FontAwesomeIcons.cookieBite,
+                    color: MyColor.orange, size: iconSize),
+                label: "Cemilan",
+                height: categoryHeight,
+                fontSize: fontSize,
+                spacing: textSpacing,
+                onTap: () {
+                  Logger.log("Clicked on Cemilan");
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => ListMerchantPage(
+                        category: MerchantCategory.snacks,
+                      ),
                     ),
-                  ),
-                );
-              }
-            ),
+                  );
+                }),
           ),
         ],
       ),
@@ -329,22 +335,26 @@ class _HomePageState extends ConsumerState<HomePage> {
     );
   }
 
-  Widget _buildRecommendedList(List<MerchantWithDistanceHome> merchantsWithDistance) {
-    Logger.log("🏠 HOME_PAGE - Building recommended list with ${merchantsWithDistance.length} merchants");
-    
+  Widget _buildRecommendedList(
+      List<MerchantWithDistanceHome> merchantsWithDistance) {
+    Logger.log(
+        "🏠 HOME_PAGE - Building recommended list with ${merchantsWithDistance.length} merchants");
+
     return Column(
       children: merchantsWithDistance.map<Widget>((merchantWithDistance) {
         final merchant = merchantWithDistance.merchant;
         final distance = merchantWithDistance.distance;
-        
-        Logger.log("🏪 HOME_PAGE - Displaying: ${merchant.merchantName} (${distance?.toStringAsFixed(2)}km, pop: ${merchant.merchantPopularity ?? 0})");
-        
+
+        Logger.log(
+            "🏪 HOME_PAGE - Displaying: ${merchant.merchantName} (${distance?.toStringAsFixed(2)}km, pop: ${merchant.merchantPopularity ?? 0})");
+
         return Padding(
           padding: const EdgeInsets.only(bottom: 8),
           child: MerchantWidget(
             merchant: merchant,
             onTap: () {
-              Logger.log("Clicked on recommended merchant: ${merchant.merchantName}");
+              Logger.log(
+                  "Clicked on recommended merchant: ${merchant.merchantName}");
               Navigator.push(
                 context,
                 MaterialPageRoute(
@@ -352,7 +362,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                 ),
               );
             },
-            showFavoriteButton: true, 
+            showFavoriteButton: true,
             distance: distance,
           ),
         );
@@ -362,8 +372,9 @@ class _HomePageState extends ConsumerState<HomePage> {
 
   Widget _buildRecommendedShimmer() {
     return Column(
-      children: List.generate(3, (index) => 
-        Padding(
+      children: List.generate(
+        3,
+        (index) => Padding(
           padding: const EdgeInsets.only(bottom: 12),
           child: Shimmer.fromColors(
             baseColor: Colors.grey[300]!,
@@ -439,7 +450,8 @@ class _HomePageState extends ConsumerState<HomePage> {
           const SizedBox(height: 8),
           TextButton(
             onPressed: () {
-              ref.read(recommendedMerchantsProvider.notifier)
+              ref
+                  .read(recommendedMerchantsProvider.notifier)
                   .getRecommendedMerchants();
             },
             child: Text(
@@ -456,7 +468,8 @@ class _HomePageState extends ConsumerState<HomePage> {
     );
   }
 
-  Widget homepageAppBar(AppState userState, AppState<String, Exception> address) {
+  Widget homepageAppBar(
+      AppState userState, AppState<String, Exception> address) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       child: Row(
@@ -500,20 +513,20 @@ class _HomePageState extends ConsumerState<HomePage> {
                       ),
                       success: (addressText) => Text(
                         addressText,
-                        style:
-                            TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+                        style: TextStyle(
+                            fontSize: 15, fontWeight: FontWeight.w700),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
                       error: (_, __) => Text(
                         "Error fetching location",
-                        style:
-                            TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+                        style: TextStyle(
+                            fontSize: 15, fontWeight: FontWeight.w700),
                       ),
                       orElse: () => Text(
                         "Location not available",
-                        style:
-                            TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+                        style: TextStyle(
+                            fontSize: 15, fontWeight: FontWeight.w700),
                       ),
                     ),
                   ),
@@ -524,6 +537,12 @@ class _HomePageState extends ConsumerState<HomePage> {
           IconButton(
             onPressed: () {
               Logger.log("Clicked on notifications icon");
+              Navigator.push(
+                context, 
+                MaterialPageRoute(
+                  builder: (context) => const NotificationPage(),
+                ),
+                );
             },
             icon: const Icon(Icons.notifications_none),
             color: MyColor.blackPlain,

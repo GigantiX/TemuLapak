@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:temulapak_app/data/network/login_service.dart';
+import 'package:temulapak_app/data/network/notification_service.dart';
 import 'package:temulapak_app/data/network/user_service.dart';
 import 'package:temulapak_app/model/state/app_state.dart';
 import 'package:temulapak_app/model/user/user_model.dart';
@@ -16,6 +17,7 @@ final profileViewModelProvider =
 class ProfileViewModel extends StateNotifier<AppState<UserModel, Exception>> {
   final UserService _userService;
   final LoginService _loginService;
+  final NotificationService _notificationService = NotificationService.instance;
 
   ProfileViewModel(this._userService, this._loginService)
       : super(AppState.idle());
@@ -46,6 +48,7 @@ class ProfileViewModel extends StateNotifier<AppState<UserModel, Exception>> {
     state = AppState.loading();
 
     try {
+      await _notificationService.clearFCMTokenOnLogout();
       await _loginService.signOut();
       Logger.log("PROFILEVM - User signed out successfully");
       state = AppState.idle();
