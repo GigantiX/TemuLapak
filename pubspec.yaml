@@ -47,6 +47,29 @@ dev_dependencies:
     sdk: flutter
   riverpod_generator: ^2.3.11
   riverpod_lint: ^2.3.9
+  flutter_launcher_icons: ^0.13.1
+  flutter_native_splash: ^2.4.0
+
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: "lib/assets/icons/IconApp.png"
+  min_sdk_android: 21
+
+flutter_native_splash:
+  color: "#FF4F00"
+  
+  image: "lib/assets/images/SplashScreen.png"
+  image_dark: "lib/assets/images/SplashScreen.png"
+  
+  android_12:
+    image: "lib/assets/images/SplashScreen.png"
+    image_dark: "lib/assets/images/SplashScreen.png"
+  
+  web: true
+  android_gravity: center
+  ios_content_mode: center
+  fullscreen: true
 
 flutter:
   uses-material-design: true
