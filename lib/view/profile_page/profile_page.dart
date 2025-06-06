@@ -13,7 +13,7 @@ import 'package:temulapak_app/view/about_page/about_page.dart';
 import 'package:temulapak_app/view/login_page/login_page.dart';
 import 'package:temulapak_app/view/login_page/login_viewmodel.dart';
 import 'package:temulapak_app/view/register_merchant_page/register_merchant_page.dart';
-import 'package:temulapak_app/view/widget/profile_menu_item.dart';
+import 'package:temulapak_app/view/widget/profile/profile_menu_item.dart';
 
 
 class ProfilePage extends ConsumerStatefulWidget {
