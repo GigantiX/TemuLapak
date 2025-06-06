@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:temulapak_app/assets/mycolor.dart';
+import 'package:temulapak_app/model/faq/faq.dart';
+import 'package:temulapak_app/view/widget/faq/faq_item_widget.dart';
+
 
 class FaqPage extends StatefulWidget {
   const FaqPage({super.key});
@@ -141,8 +144,8 @@ class _FaqPageState extends State<FaqPage> {
               physics: const NeverScrollableScrollPhysics(),
               itemCount: faqItems.length,
               separatorBuilder: (context, index) => const SizedBox(height: 12),
-              itemBuilder: (context, index) {
-                return _buildFaqItem(faqItems[index]);
+               itemBuilder: (context, index) {
+                return FaqItemWidget(item: faqItems[index]);
               },
             ),
             const SizedBox(height: 30),
@@ -189,47 +192,6 @@ class _FaqPageState extends State<FaqPage> {
     );
   }
 
-  Widget _buildFaqItem(FaqItem item) {
-    return Container(
-      decoration: BoxDecoration(
-        border: Border.all(color: Colors.grey[200]!),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: ExpansionTile(
-        title: Text(
-          item.question,
-          style: TextStyle(
-            fontSize: 15,
-            fontWeight: FontWeight.w600,
-            color: MyColor.blackPlain,
-          ),
-        ),
-        iconColor: MyColor.orange,
-        collapsedIconColor: Colors.grey[600],
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-            child: Text(
-              item.answer,
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey[700],
-                height: 1.5,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+
 }
 
-class FaqItem {
-  final String question;
-  final String answer;
-
-  FaqItem({
-    required this.question,
-    required this.answer,
-  });
-}
