@@ -13,6 +13,8 @@ import 'package:temulapak_app/view/about_page/about_page.dart';
 import 'package:temulapak_app/view/login_page/login_page.dart';
 import 'package:temulapak_app/view/login_page/login_viewmodel.dart';
 import 'package:temulapak_app/view/register_merchant_page/register_merchant_page.dart';
+import 'package:temulapak_app/view/widget/profile_menu_item.dart';
+
 
 class ProfilePage extends ConsumerStatefulWidget {
   const ProfilePage({super.key});
@@ -269,7 +271,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                       ),
 
                       // Menu Items
-                      _buildMenuItem(
+                      ProfileMenuItem(
                         icon: Icons.help_outline,
                         title: "FAQ",
                         subtitle: "Pertanyaan yang sering ditanyakan",
@@ -282,7 +284,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                           );
                         },
                       ),
-                      _buildMenuItem(
+                      ProfileMenuItem(
                         icon: Icons.support_agent,
                         title: "Bantuan & Dukungan",
                         subtitle: "Hubungi tim support kami",
@@ -295,7 +297,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                           );
                         },
                       ),
-                      _buildMenuItem(
+                      ProfileMenuItem(
                         icon: Icons.info_outline,
                         title: "Tentang Aplikasi",
                         subtitle: "Informasi aplikasi",
@@ -308,7 +310,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                           );
                         },
                       ),
-                      _buildMenuItem(
+                      ProfileMenuItem(
                         icon: Icons.logout,
                         title: "Keluar",
                         subtitle: "Keluar dari akun",
@@ -380,73 +382,6 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
     );
   }
 
-  Widget _buildMenuItem({
-    required IconData icon,
-    required String title,
-    String? subtitle,
-    required VoidCallback onTap,
-    Color? textColor,
-    Color? iconColor,
-  }) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(12),
-          onTap: onTap,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: (iconColor ?? MyColor.orange).withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Icon(
-                    icon,
-                    color: iconColor ?? MyColor.orange,
-                    size: 20,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        title,
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: textColor ?? MyColor.blackPlain,
-                        ),
-                      ),
-                      if (subtitle != null) ...[
-                        const SizedBox(height: 2),
-                        Text(
-                          subtitle,
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey[600],
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-                Icon(
-                  Icons.arrow_forward_ios,
-                  color: Colors.grey[400],
-                  size: 16,
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
+
+  
 }
