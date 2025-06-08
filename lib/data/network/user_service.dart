@@ -4,7 +4,7 @@ import 'package:temulapak_app/model/user/user_model.dart';
 import 'package:temulapak_app/utils/logger.dart';
 
 class UserService {
-  final user = FirebaseAuth.instance.currentUser;
+  User? get user => FirebaseAuth.instance.currentUser;
 
   final CollectionReference _usersCollection =
       FirebaseFirestore.instance.collection('users');

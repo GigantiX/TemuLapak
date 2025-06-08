@@ -16,7 +16,7 @@ class LoginService {
 
   Future<void> signInWithGoogle() async {
     try {
-      // Trigger the Google sign-in flow
+      await _googleSignIn.signOut();
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
       if (googleUser == null) {
         Logger.log("google-signin-cancelled");
@@ -41,7 +41,6 @@ class LoginService {
       if (user != null) {
         final userService = UserService();
         await userService.addProfileFromGoogle(user);
-        
       } else {
         throw FirebaseAuthException(
             code: 'null-user',
@@ -77,6 +76,7 @@ class LoginService {
       Logger.log("User signed out successfully");
     } catch (e) {
       Logger.error("Sign out error", error: e);
+      await _googleSignIn.signOut();
     }
   }
 

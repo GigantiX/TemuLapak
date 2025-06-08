@@ -196,6 +196,10 @@ class _EditMerchantProfilePageState
             TextEditingController(text: product.productName ?? '');
         final priceController =
             TextEditingController(text: product.productPrice ?? '');
+
+        nameController.addListener(_onFieldChanged);
+        priceController.addListener(_onFieldChanged);
+
         _productFields.add(ProductField(
           nameController: nameController,
           priceController: priceController,
@@ -208,7 +212,7 @@ class _EditMerchantProfilePageState
     // Add listeners to detect changes
     _nameController.addListener(_onFieldChanged);
     _descController.addListener(_onFieldChanged);
-
+    
     setState(() {
       _isInitialized = true;
     });
@@ -288,19 +292,7 @@ class _EditMerchantProfilePageState
       ));
     });
   }
-
-  void _removeProductField() {
-    Logger.log("Removing last product field");
-    if (_productFields.length > 1) {
-      setState(() {
-        final field = _productFields.removeLast();
-        field.nameController.dispose();
-        field.priceController.dispose();
-        _hasChanges = _hasDataChanged();
-      });
-    }
-  }
-
+  
   @override
   Widget build(BuildContext context) {
     final merchantState = ref.watch(editMerchantDataViewModelProvider);
@@ -1472,97 +1464,6 @@ class _EditMerchantProfilePageState
             ),
           ),
         ),
-      ),
-    );
-  }
-
-  void _showUnsavedChangesDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
-        title: Row(
-          children: [
-            Container(
-              padding: EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.amber.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Icon(
-                Icons.warning_amber,
-                color: Colors.amber[700],
-                size: 24,
-              ),
-            ),
-            SizedBox(width: 12),
-            Text(
-              'Perubahan Belum Disimpan',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ],
-        ),
-        content: Text(
-          'Anda memiliki perubahan yang belum disimpan. Apakah Anda yakin ingin keluar tanpa menyimpan?',
-          style: TextStyle(
-            fontSize: 16,
-            height: 1.4,
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-            },
-            child: Text(
-              'Batal',
-              style: TextStyle(
-                color: Colors.grey[600],
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              Navigator.of(context).pop();
-            },
-            child: Text(
-              'Keluar Tanpa Simpan',
-              style: TextStyle(
-                color: Colors.red[600],
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              // Trigger save
-              if (_formKey.currentState!.validate() && _selectedCategories.isNotEmpty) {
-                // Auto-save logic here if needed
-              }
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: MyColor.orange,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-            child: Text(
-              'Simpan',
-              style: TextStyle(
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }

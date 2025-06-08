@@ -4,13 +4,12 @@ import 'package:temulapak_app/assets/mycolor.dart';
 import 'package:temulapak_app/utils/custom_dialog.dart';
 import 'package:temulapak_app/utils/loading/loading.dart';
 import 'package:temulapak_app/utils/logger.dart';
-import 'package:temulapak_app/utils/network_checker.dart';
 import 'package:temulapak_app/view/help_centre_page/help_center_page.dart';
 import 'package:temulapak_app/view/merchant_dashboard_page/merchant_dashboard_page.dart';
+import 'package:temulapak_app/view/navigation_page/navigation_viewmodel.dart';
 import 'package:temulapak_app/view/profile_page/profile_viewmodel.dart';
 import 'package:temulapak_app/view/faq_page/faq_page.dart';
 import 'package:temulapak_app/view/about_page/about_page.dart';
-import 'package:temulapak_app/view/login_page/login_page.dart';
 import 'package:temulapak_app/view/login_page/login_viewmodel.dart';
 import 'package:temulapak_app/view/register_merchant_page/register_merchant_page.dart';
 
@@ -32,7 +31,8 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
   @override
   Widget build(BuildContext context) {
     final userState = ref.watch(profileViewModelProvider);
-    final loginVM = ref.watch(loginViewModelProvider.notifier);
+    final profileVM = ref.watch(profileViewModelProvider.notifier);
+    final navbarVM = ref.read(navigationViewModelProvider.notifier);
 
     return Scaffold(
       backgroundColor: MyColor.orange,
@@ -157,10 +157,11 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                 child: Padding(
                   padding: const EdgeInsets.all(20),
                   child: Column(
-                    mainAxisSize: MainAxisSize.min, // FIXED: Allow column to size itself
+                    mainAxisSize:
+                        MainAxisSize.min, // FIXED: Allow column to size itself
                     children: [
                       const SizedBox(height: 20),
-                      
+
                       // Merchant Page Button
                       Container(
                         width: double.infinity,
@@ -328,24 +329,34 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                                 dialogColor: MyColor.red,
                                 onConfirm: () async {
                                   Navigator.pop(context);
-                                  final success =
-                                      await NetworkChecker.instance.run(
-                                    context: context,
-                                    customOfflineMessage:
-                                        "Can't connect to the internet",
-                                    action: () async {
-                                      await loginVM.signOut();
-                                      return true;
-                                    },
-                                  );
-                                  if (success == true && context.mounted) {
-                                    Navigator.pushAndRemoveUntil(
-                                      context,
-                                      MaterialPageRoute(
-                                          builder: (context) =>
-                                              const LoginPage()),
-                                      (route) => false,
-                                    );
+                                  Loading.show(context);
+
+                                  try {
+                                    navbarVM.resetToHome();
+                                    await profileVM.signOut();
+                                    ref.invalidate(loginViewModelProvider);
+                                    Loading.hide();
+                                    await Future.delayed(
+                                        const Duration(milliseconds: 50));
+
+                                    if (context.mounted) {
+                                      Navigator.pushNamedAndRemoveUntil(
+                                        context,
+                                        '/login',
+                                        (route) => false,
+                                      );
+                                    }
+                                  } catch (e) {
+                                    Logger.error("Error during logout: $e");
+                                    if (context.mounted) {
+                                      Loading.hide();
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(
+                                        SnackBar(
+                                            content: Text(
+                                                'Logout failed: ${e.toString()}')),
+                                      );
+                                    }
                                   }
                                 },
                                 onCancel: () {

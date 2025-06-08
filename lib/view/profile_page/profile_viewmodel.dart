@@ -48,7 +48,15 @@ class ProfileViewModel extends StateNotifier<AppState<UserModel, Exception>> {
     state = AppState.loading();
 
     try {
-      await _notificationService.clearFCMTokenOnLogout();
+      final userId = _userService.getCurrentUID();
+      Logger.log("PROFILEVM - Current UID before logout: $userId");
+      
+      if (userId != null) {
+        await _notificationService.clearFCMTokenWithUID(userId);
+      } else {
+        Logger.log("PROFILEVM - No UID found, skipping FCM token cleanup");
+      }
+      
       await _loginService.signOut();
       Logger.log("PROFILEVM - User signed out successfully");
       state = AppState.idle();

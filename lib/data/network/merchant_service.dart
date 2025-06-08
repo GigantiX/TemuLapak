@@ -522,8 +522,8 @@ class MerchantService {
     try {
       final uid = userService.getCurrentUID();
       if (uid == null) {
-        Logger.error("User not authenticated");
-        throw Exception("User not authenticated");
+        Logger.error("MRCNSRVC - User not authenticated. uid: $uid");
+        throw Exception("MRCNSRVC - User not authenticated");
       }
 
       final merchantId = "MRCN_$uid";

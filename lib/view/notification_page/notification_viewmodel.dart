@@ -63,22 +63,7 @@ class NotificationActionsViewModel extends _$NotificationActionsViewModel {
       Logger.error("NOTIFICATION_ACTIONS_VM - Error updating FCM token", error: e);
     }
   }
-
-  /// Clear FCM token on logout
-  Future<void> clearTokenOnLogout() async {
-    try {
-      Logger.log("NOTIFICATION_ACTIONS_VM - Clearing FCM token on logout");
-      
-      final notificationService = ref.read(notificationServiceProvider);
-      await notificationService.clearFCMTokenOnLogout();
-      
-      Logger.log("NOTIFICATION_ACTIONS_VM - FCM token cleared successfully");
-      
-    } catch (e) {
-      Logger.error("NOTIFICATION_ACTIONS_VM - Error clearing FCM token", error: e);
-    }
-  }
-
+  
   /// Clear state
   void clearState() {
     state = AppState.idle();

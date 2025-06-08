@@ -48,7 +48,7 @@ final notificationHistoryProvider =
 typedef NotificationHistoryRef
     = AutoDisposeStreamProviderRef<List<NotificationModel>>;
 String _$notificationActionsViewModelHash() =>
-    r'410a1d05f1c2a8c252f4a51f571c057a13d5211c';
+    r'ea5a5470eac455c0e9708370e42e4d726e061e33';
 
 /// Notification actions viewmodel
 ///

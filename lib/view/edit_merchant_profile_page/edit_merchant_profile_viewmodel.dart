@@ -38,13 +38,13 @@ class EditMerchantProfileViewModel extends _$EditMerchantProfileViewModel {
         merchantStatus: currentMerchant.merchantStatus,
         merchantName: merchantName,
         merchantDesc: merchantDesc,
-        merchantImgUrl: currentMerchant.merchantImgUrl, // Will be updated if new image provided
-        merchantLocLat: currentMerchant.merchantLocLat, // Preserve location
-        merchantLocLong: currentMerchant.merchantLocLong, // Preserve location
+        merchantImgUrl: currentMerchant.merchantImgUrl, 
+        merchantLocLat: currentMerchant.merchantLocLat, 
+        merchantLocLong: currentMerchant.merchantLocLong, 
         merchantPopularity: currentMerchant.merchantPopularity,
         merchantCategory: merchantCategory,
         products: products,
-        geoPoint: currentMerchant.geoPoint, // Preserve geoPoint
+        geoPoint: currentMerchant.geoPoint, 
       );
       
       Logger.log("VM - Calling updateMerchant service");
