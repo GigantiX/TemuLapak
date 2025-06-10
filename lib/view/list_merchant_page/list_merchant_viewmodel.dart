@@ -1,21 +1,19 @@
-// File: lib/view/list_merchant_page/list_merchant_viewmodel.dart
-// ENHANCED: Added GeoFlutterFire Plus integration with safe fallbacks
-
 import 'dart:math';
+import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:temulapak_app/data/location/location_service.dart';
 import 'package:temulapak_app/data/network/merchant_service.dart';
-import 'package:temulapak_app/data/network/geo_merchant_service.dart'; // NEW IMPORT
+import 'package:temulapak_app/data/network/geo_merchant_service.dart';
 import 'package:temulapak_app/model/merchant/merchant_model.dart';
 import 'package:temulapak_app/model/state/app_state.dart';
 import 'package:temulapak_app/utils/logger.dart';
 import 'package:temulapak_app/view/home_page/home_viewmodel.dart';
+import 'package:temulapak_app/view/merchant_detail_page/merchant_detail_page.dart';
 
 part 'list_merchant_viewmodel.g.dart';
 
 enum MerchantCategory { nearest, drinks, food, snacks }
-
 enum MerchantFilter { all, open, closed }
 
 extension MerchantCategoryExtension on MerchantCategory {
@@ -35,7 +33,7 @@ extension MerchantCategoryExtension on MerchantCategory {
   String get firebaseCategory {
     switch (this) {
       case MerchantCategory.nearest:
-        return ""; // Special case, not used for Firebase query
+        return "";
       case MerchantCategory.drinks:
         return "Minuman";
       case MerchantCategory.food:
@@ -59,16 +57,15 @@ extension MerchantFilterExtension on MerchantFilter {
   }
 }
 
-// ENHANCED: MerchantWithDistance model with geo info
 class MerchantWithDistance {
   final MerchantModel merchant;
-  final double? distance; // Distance in kilometers
-  final bool isGeoEnhanced; // NEW: Track if result came from geo query
+  final double? distance; 
+  final bool isGeoEnhanced;
 
   MerchantWithDistance({
     required this.merchant,
     this.distance,
-    this.isGeoEnhanced = false, // Default false for backward compatibility
+    this.isGeoEnhanced = false, 
   });
 
   MerchantWithDistance copyWith({
@@ -84,25 +81,21 @@ class MerchantWithDistance {
   }
 }
 
-// Provider for MerchantService
 @riverpod
 MerchantService merchantService(ref) {
   return MerchantService();
 }
 
-// Provider for LocationServices
 @riverpod
 LocationServiceslocationServices(ref) {
   return LocationService.instance;
 }
 
-// NEW: Provider for GeoMerchantService
 @riverpod
 GeoMerchantService geoMerchantService(ref) {
   return GeoMerchantService.instance;
 }
 
-// ENHANCED: ViewModel with GeoFlutterFire Plus integration
 @riverpod
 class ListMerchantViewModel extends _$ListMerchantViewModel {
   List<MerchantWithDistance> _originalMerchants = [];
@@ -114,7 +107,6 @@ class ListMerchantViewModel extends _$ListMerchantViewModel {
     return AppState.idle();
   }
 
-  /// Initialize geo service (call once at startup)
   Future<void> initializeGeoService() async {
     if (_geoServiceInitialized) return;
     
@@ -134,23 +126,15 @@ class ListMerchantViewModel extends _$ListMerchantViewModel {
     }
   }
 
-  /// Fetch merchants based on category with GEO enhancement
   Future<void> fetchMerchants(MerchantCategory category) async {
     _updateState(AppState.loading());
     
     try {
       Logger.log("LISTVM_GEO - Fetching merchants for category: ${category.displayName}");
-      
-      // STEP 1: Initialize geo service if not done
       await initializeGeoService();
-      
-      // STEP 2: Get user location for distance calculation
       await _getUserLocation();
-      
-      // STEP 3: Fetch merchants based on category with GEO enhancement
       List<MerchantModel> merchants;
       bool isGeoEnhanced = false;
-      
       switch (category) {
         case MerchantCategory.nearest:
           final result = await _fetchNearestMerchantsGeoEnhanced();
@@ -165,11 +149,7 @@ class ListMerchantViewModel extends _$ListMerchantViewModel {
           isGeoEnhanced = result['isGeoEnhanced'];
           break;
       }
-      
-      // STEP 4: Calculate distances and create MerchantWithDistance objects
       List<MerchantWithDistance> merchantsWithDistance = await _calculateDistances(merchants, isGeoEnhanced);
-      
-      // STEP 5: Sort by distance if user location is available
       if (_userPosition != null) {
         merchantsWithDistance.sort((a, b) {
           if (a.distance == null && b.distance == null) return 0;
@@ -178,13 +158,9 @@ class ListMerchantViewModel extends _$ListMerchantViewModel {
           return a.distance!.compareTo(b.distance!);
         });
       }
-      
-      // Store original data for filtering
       _originalMerchants = merchantsWithDistance;
-      
       Logger.log("LISTVM_GEO - Successfully fetched ${merchantsWithDistance.length} merchants (geo: $isGeoEnhanced)");
       _updateState(AppState.success(merchantsWithDistance));
-      
     } catch (e) {
       Logger.error("LISTVM_GEO - Error fetching merchants", error: e);
       _updateState(AppState.error(
@@ -194,14 +170,11 @@ class ListMerchantViewModel extends _$ListMerchantViewModel {
     }
   }
 
-  /// Get user's current location for distance calculation
   Future<void> _getUserLocation() async {
     try {
       Logger.log("LISTVM_GEO - Getting user location for distance calculation");
-      
       final locationService = ref.read(locationServicesProvider);
       _userPosition = await locationService.getCurrentLocation();
-      
       if (_userPosition != null) {
         Logger.log("LISTVM_GEO - User location obtained: ${_userPosition!.latitude}, ${_userPosition!.longitude}");
       } else {
@@ -213,79 +186,66 @@ class ListMerchantViewModel extends _$ListMerchantViewModel {
     }
   }
 
-  /// ENHANCED: Fetch nearest merchants with geo enhancement
+  void navigateToMerchantDetail(BuildContext context, MerchantModel merchant) {
+  Logger.log("LISTVM - Navigating to merchant detail: ${merchant.merchantName}");
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => MerchantDetailPage(merchant: merchant),
+      ),
+    );
+  }
+
   Future<Map<String, dynamic>> _fetchNearestMerchantsGeoEnhanced() async {
     final locationService = ref.read(locationServicesProvider);
     final position = await locationService.getCurrentLocation();
-    
     if (position == null) {
       throw Exception('Location not available. Please enable GPS.');
     }
-
     final merchantService = ref.read(merchantServiceProvider);
-    
     try {
       Logger.log("LISTVM_GEO - Attempting geo-enhanced nearest search with 20km radius");
-      
-      // REQUIREMENT: 20km radius for all queries
       final merchants = await merchantService.getNearbyMerchants(
         latitude: position.latitude,
         longitude: position.longitude,
-        radiusInKm: 20.0, // REQUIREMENT: 20km radius
-        limit: 50, // Keep 50 for nearest (not changed from requirement)
+        radiusInKm: 20.0, 
+        limit: 50,
       );
-      
-      // Check if geo service was actually used (merchants should have better accuracy)
       final isGeoEnhanced = _geoServiceInitialized && merchants.isNotEmpty;
-      
       Logger.log("LISTVM_GEO - Nearest search completed: ${merchants.length} merchants (geo: $isGeoEnhanced)");
-      
       return {
         'merchants': merchants,
         'isGeoEnhanced': isGeoEnhanced,
       };
-      
     } catch (e) {
       Logger.error("LISTVM_GEO - Error in nearest search", error: e);
       rethrow;
     }
   }
 
-  /// ENHANCED: Fetch merchants by category with geo enhancement
   Future<Map<String, dynamic>> _fetchMerchantsByCategoryGeoEnhanced(String category) async {
     final merchantService = ref.read(merchantServiceProvider);
-    
     try {
       Logger.log("LISTVM_GEO - Attempting geo-enhanced category search for: $category with 20km radius");
-      
-      // REQUIREMENT: Pass user location for geo enhancement with 20km radius
       final merchants = await merchantService.getMerchantsByCategory(
         category,
         userLatitude: _userPosition?.latitude,
         userLongitude: _userPosition?.longitude,
-        maxRadiusKm: 20.0, // REQUIREMENT: 20km radius for category search
-        limit: 50, // REQUIREMENT: 50 merchants per category
+        maxRadiusKm: 20.0, 
+        limit: 50, 
       );
-      
-      // Check if geo service was actually used
-      final isGeoEnhanced = _geoServiceInitialized && 
-                           _userPosition != null && 
-                           merchants.isNotEmpty;
-      
+      final isGeoEnhanced = _geoServiceInitialized && _userPosition != null && merchants.isNotEmpty;
       Logger.log("LISTVM_GEO - Category search completed: ${merchants.length} merchants (geo: $isGeoEnhanced)");
-      
       return {
         'merchants': merchants,
         'isGeoEnhanced': isGeoEnhanced,
       };
-      
     } catch (e) {
       Logger.error("LISTVM_GEO - Error in category search", error: e);
       rethrow;
     }
   }
 
-  /// Calculate distances for all merchants
   Future<List<MerchantWithDistance>> _calculateDistances(List<MerchantModel> merchants, bool isGeoEnhanced) async {
     if (_userPosition == null) {
       Logger.log("LISTVM_GEO - No user position, returning merchants without distances");
@@ -295,14 +255,10 @@ class ListMerchantViewModel extends _$ListMerchantViewModel {
         isGeoEnhanced: isGeoEnhanced,
       )).toList();
     }
-
     Logger.log("LISTVM_GEO - Calculating distances for ${merchants.length} merchants");
-    
     List<MerchantWithDistance> result = [];
-    
     for (final merchant in merchants) {
       double? distance;
-      
       if (merchant.merchantLocLat != null && merchant.merchantLocLong != null) {
         distance = _calculateDistance(
           _userPosition!.latitude,
@@ -311,32 +267,25 @@ class ListMerchantViewModel extends _$ListMerchantViewModel {
           merchant.merchantLocLong!,
         );
       }
-      
       result.add(MerchantWithDistance(
         merchant: merchant,
         distance: distance,
         isGeoEnhanced: isGeoEnhanced,
       ));
     }
-    
     Logger.log("LISTVM_GEO - Distance calculation completed (geo: $isGeoEnhanced)");
     return result;
   }
 
-  /// Calculate distance between two points using Haversine formula
   double _calculateDistance(double lat1, double lon1, double lat2, double lon2) {
     const double earthRadius = 6371; // Earth radius in kilometers
-
     double dLat = _degreesToRadians(lat2 - lat1);
     double dLon = _degreesToRadians(lon2 - lon1);
-
     double a = sin(dLat / 2) * sin(dLat / 2) +
         cos(_degreesToRadians(lat1)) * cos(_degreesToRadians(lat2)) *
         sin(dLon / 2) * sin(dLon / 2);
-    
     double c = 2 * atan2(sqrt(a), sqrt(1 - a));
     double distance = earthRadius * c;
-
     return distance;
   }
 
@@ -344,7 +293,6 @@ class ListMerchantViewModel extends _$ListMerchantViewModel {
     return degrees * (pi / 180);
   }
 
-  /// Apply filter to current merchants
   void applyFilter(MerchantFilter filter) {
     if (_originalMerchants.isEmpty) {
       Logger.log("LISTVM_GEO - Cannot apply filter, no merchants loaded");
@@ -369,13 +317,11 @@ class ListMerchantViewModel extends _$ListMerchantViewModel {
     _updateState(AppState.success(filteredMerchants));
   }
 
-  /// Refresh merchants data
   Future<void> refreshMerchants(MerchantCategory category) async {
     Logger.log("LISTVM_GEO - Refreshing merchants for category: ${category.displayName}");
     await fetchMerchants(category);
   }
 
-  /// NEW: Test geo functionality
   Future<bool> testGeoFunctionality() async {
     try {
       Logger.log("LISTVM_GEO - Testing geo functionality");
@@ -395,7 +341,6 @@ class ListMerchantViewModel extends _$ListMerchantViewModel {
     }
   }
 
-  /// NEW: Get geo service status
   Map<String, dynamic> getGeoServiceStatus() {
     final merchantService = ref.read(merchantServiceProvider);
     final status = merchantService.getGeoServiceStatus();
@@ -403,13 +348,11 @@ class ListMerchantViewModel extends _$ListMerchantViewModel {
     return status;
   }
 
-  /// Private method to update state safely
   void _updateState(AppState<List<MerchantWithDistance>, Exception> newState) {
     state = newState;
   }
 }
 
-// Provider for current filter state
 @riverpod
 class MerchantFilterState extends _$MerchantFilterState {
   @override
