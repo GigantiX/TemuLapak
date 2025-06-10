@@ -190,12 +190,11 @@ class ProfileViewModel extends StateNotifier<AppState<UserModel, Exception>> {
           dialogColor: MyColor.red,
           onConfirm: () async {
             Navigator.pop(context);
-            final loginVM = ref.read(LoginVM.loginViewModelProvider.notifier);
             final success = await NetworkChecker.instance.run(
               context: context,
               customOfflineMessage: "Can't connect to the internet",
               action: () async {
-                await loginVM.signOut();
+                await signOut(context);
                 return true;
               },
             );

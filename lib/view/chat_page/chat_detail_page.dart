@@ -355,7 +355,7 @@ class _ChatDetailPageState extends ConsumerState<ChatDetailPage> {
             SizedBox(height: 24),
             ElevatedButton.icon(
               onPressed: () {
-                Navigator.pop(context);
+                ref.read(chatActionsViewModelProvider.notifier).navigateBack(context);
               },
               icon: Icon(Icons.arrow_back),
               label: Text('Kembali'),

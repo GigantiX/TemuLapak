@@ -5,14 +5,15 @@ import 'package:temulapak_app/utils/logger.dart';
 part 'live_tracking_notifier.g.dart';
 
 @Riverpod(keepAlive: true)
-class LiveTrackingNotifier extends _$LiveTrackingNotifier{
+class LiveTrackingNotifier extends _$LiveTrackingNotifier {
   final LiveTrackingService _trackingService = LiveTrackingService.instance;
 
   @override
   LiveTrackingState build() {
     final isServiceRunning = _trackingService.isTracking;
-    
-    Logger.log("LiveTrackingProvider - Initializing with service status: $isServiceRunning");
+
+    Logger.log(
+        "LiveTrackingProvider - Initializing with service status: $isServiceRunning");
     return LiveTrackingState(
       isEnabled: isServiceRunning,
       isInitializing: false,
@@ -24,12 +25,15 @@ class LiveTrackingNotifier extends _$LiveTrackingNotifier{
   Future<bool> startTracking() async {
     try {
       Logger.log("LiveTrackingProvider - Starting live tracking");
-      
+
       state = state.copyWith(isInitializing: true, error: null);
 
       final success = await _trackingService.startTracking();
-      
-      if (success) {
+      final actualTrackingState = _trackingService.isTracking;
+      Logger.log(
+          "LiveTrackingProvider - Service reports state: $actualTrackingState (success: $success)");
+
+      if (success && actualTrackingState) {
         state = state.copyWith(
           isEnabled: true,
           isInitializing: false,
@@ -41,17 +45,29 @@ class LiveTrackingNotifier extends _$LiveTrackingNotifier{
         state = state.copyWith(
           isEnabled: false,
           isInitializing: false,
-          error: "Failed to start live tracking. Please check location permissions.",
+          error:
+              "Failed to start live tracking. Please check location permissions.",
         );
         Logger.error("LiveTrackingProvider - Failed to start live tracking");
         return false;
       }
     } catch (e) {
-      Logger.error("LiveTrackingProvider - Error starting live tracking", error: e);
+      Logger.error("LiveTrackingProvider - Error starting live tracking",
+          error: e);
+
+      String errorMessage = "Location permission required";
+      if (e.toString().contains("permission")) {
+        errorMessage = "Please grant location permission to use live tracking";
+      } else if (e.toString().contains("service")) {
+        errorMessage = "Please enable location services to use live tracking";
+      } else {
+        errorMessage = "An unexpected error occurred";
+      }
+
       state = state.copyWith(
         isEnabled: false,
         isInitializing: false,
-        error: e.toString(),
+        error: errorMessage,
       );
       return false;
     }
@@ -61,25 +77,59 @@ class LiveTrackingNotifier extends _$LiveTrackingNotifier{
   Future<void> stopTracking() async {
     try {
       Logger.log("LiveTrackingProvider - Stopping live tracking");
-      
+
       state = state.copyWith(isInitializing: true, error: null);
 
       await _trackingService.stopTracking();
-      
+
       state = state.copyWith(
         isEnabled: false,
         isInitializing: false,
         error: null,
       );
-      
+
       Logger.log("LiveTrackingProvider - Live tracking stopped successfully");
     } catch (e) {
-      Logger.error("LiveTrackingProvider - Error stopping live tracking", error: e);
+      Logger.error("LiveTrackingProvider - Error stopping live tracking",
+          error: e);
       state = state.copyWith(
         isEnabled: false,
         isInitializing: false,
         error: e.toString(),
       );
+    }
+  }
+
+  void forceSyncState() {
+    final serviceRunning = _trackingService.isTracking;
+    state = state.copyWith(
+      isEnabled: serviceRunning,
+      error: null,
+    );
+    Logger.log(
+        "LiveTrackingProvider - Force synced state with service: isEnabled=$serviceRunning");
+  }
+
+  /// Force disable tracking (for error recovery)
+  Future<void> forceDisable() async {
+    Logger.log("LiveTrackingProvider - Force disabling tracking due to error");
+
+    // First update state to prevent UI issues
+    state = state.copyWith(
+      isEnabled: false,
+      isInitializing: false,
+      error: null,
+    );
+
+    // Then stop the actual tracking service
+    try {
+      await _trackingService.stopTracking();
+      Logger.log("LiveTrackingProvider - Successfully forced tracking off");
+    } catch (e) {
+      Logger.error(
+          "LiveTrackingProvider - Error while force disabling tracking",
+          error: e);
+      // Don't set error state here to avoid another dialog loop
     }
   }
 
@@ -95,11 +145,13 @@ class LiveTrackingNotifier extends _$LiveTrackingNotifier{
 
   void syncWithService() {
     final serviceStatus = _trackingService.isTracking;
-    
-    Logger.log("LiveTrackingProvider - Syncing state with service: $serviceStatus");
-    
+
+    Logger.log(
+        "LiveTrackingProvider - Syncing state with service: $serviceStatus");
+
     if (state.isEnabled != serviceStatus) {
-      Logger.log("LiveTrackingProvider - State mismatch detected, updating state to: $serviceStatus");
+      Logger.log(
+          "LiveTrackingProvider - State mismatch detected, updating state to: $serviceStatus");
       state = state.copyWith(
         isEnabled: serviceStatus,
         isInitializing: false,

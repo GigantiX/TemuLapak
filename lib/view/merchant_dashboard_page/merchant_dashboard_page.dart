@@ -4,7 +4,6 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:temulapak_app/assets/mycolor.dart';
 import 'package:temulapak_app/utils/loading/loading.dart';
 import 'package:temulapak_app/utils/logger.dart';
-import 'package:temulapak_app/view/edit_merchant_profile_page/edit_merchant_profile_page.dart';
 import 'package:temulapak_app/view/merchant_dashboard_page/live_tracking/live_tracking_dialog.dart';
 import 'package:temulapak_app/view/merchant_dashboard_page/live_tracking/live_tracking_notifier.dart';
 import 'package:temulapak_app/view/merchant_dashboard_page/merchant_dashboard_viewmodel.dart';
@@ -22,23 +21,27 @@ class _MerchantDashboardPageState extends ConsumerState<MerchantDashboardPage> {
   GoogleMapController? _mapController;
   Set<Marker> _markers = {};
   bool _isLoadingAction = false;
-  
+  bool _isErrorHandled = false;
+
   @override
   void initState() {
     super.initState();
     Future.microtask(() {
-      // Sync live tracking state with actual service status
-      ref.read(liveTrackingNotifierProvider.notifier).syncWithService();
-      
+      final liveTrackingState = ref.read(liveTrackingNotifierProvider);
+      final actualServiceState =
+          ref.read(liveTrackingNotifierProvider.notifier).isTracking;
+
+      if (liveTrackingState.error != null ||
+          (liveTrackingState.isEnabled && !actualServiceState)) {
+        Logger.log("Fixing inconsistent tracking state on page init");
+        ref.read(liveTrackingNotifierProvider.notifier).forceDisable();
+        ref.read(liveTrackingNotifierProvider.notifier).clearError();
+      } else {
+        ref.read(liveTrackingNotifierProvider.notifier).syncWithService();
+      }
+
       // Load merchant data
       ref.read(merchantDashboardViewmodelProvider.notifier).loadMerchantData();
-      
-      // Check if live tracking is active and start refresh timer if needed
-      final liveTrackingState = ref.read(liveTrackingNotifierProvider);
-      if (liveTrackingState.isEnabled) {
-        Logger.log("Live tracking is active, starting refresh timer");
-        ref.read(merchantDashboardViewmodelProvider.notifier).startLiveTrackingRefresh();
-      }
     });
   }
 
@@ -56,9 +59,10 @@ class _MerchantDashboardPageState extends ConsumerState<MerchantDashboardPage> {
     final liveTrackingState = ref.watch(liveTrackingNotifierProvider);
 
     // Handle loading states
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final shouldShowLoading = merchantState.isLoading || liveTrackingState.isInitializing;
-      
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final shouldShowLoading =
+          merchantState.isLoading || liveTrackingState.isInitializing;
+
       if (shouldShowLoading && !_isLoadingAction) {
         _isLoadingAction = true;
         Loading.show(context);
@@ -67,10 +71,34 @@ class _MerchantDashboardPageState extends ConsumerState<MerchantDashboardPage> {
         Loading.hide();
       }
 
-      // Handle live tracking errors
-      if (liveTrackingState.error != null) {
-        LiveTrackingDialog.showErrorDialog(context, liveTrackingState.error!);
+      // Handle live tracking errors with improved safety
+      if (liveTrackingState.error != null && mounted && !_isErrorHandled) {
+        _isErrorHandled = true;
+
+        // CRITICAL CHANGE: Force disable tracking when there's an error
+        if (liveTrackingState.isEnabled) {
+          Logger.log(
+              "CRITICAL: Tracking service has error but UI shows enabled. Forcing disabled state.");
+          // Force disable tracking without showing dialog
+          await ref.read(liveTrackingNotifierProvider.notifier).forceDisable();
+          // Stop refresh timer since tracking is now disabled
+          ref
+              .read(merchantDashboardViewmodelProvider.notifier)
+              .stopLiveTrackingRefresh();
+        }
+
+        final errorMessage = liveTrackingState.error!;
         ref.read(liveTrackingNotifierProvider.notifier).clearError();
+
+        Future.delayed(Duration(milliseconds: 500), () {
+          if (!mounted) return;
+
+          LiveTrackingDialog.showErrorDialog(context, errorMessage).then((_) {
+            // IMPORTANT: Don't reset _isErrorHandled on a timer
+            // Only reset when user navigates away or explicitly interacts
+            _isErrorHandled = true; // Keep it true until page is disposed
+          });
+        });
       }
 
       // Update map marker when merchant data changes (for live tracking updates)
@@ -85,8 +113,10 @@ class _MerchantDashboardPageState extends ConsumerState<MerchantDashboardPage> {
         child: merchantState.when(
           idle: () => _buildLoadingWidget(),
           loading: () => _buildLoadingWidget(),
-          success: (merchant) => _buildSuccessWidget(merchant, liveTrackingState),
-          error: (error, message) => _buildErrorWidget(message ?? error.toString()),
+          success: (merchant) =>
+              _buildSuccessWidget(merchant, liveTrackingState),
+          error: (error, message) =>
+              _buildErrorWidget(message ?? error.toString()),
         ),
       ),
     );
@@ -111,7 +141,7 @@ class _MerchantDashboardPageState extends ConsumerState<MerchantDashboardPage> {
                 ),
               ),
             ),
-            
+
             // Scrollable loading content
             Expanded(
               child: SingleChildScrollView(
@@ -133,13 +163,13 @@ class _MerchantDashboardPageState extends ConsumerState<MerchantDashboardPage> {
             ),
           ],
         ),
-        
+
         // Floating Back Button
         Positioned(
           top: 8,
           left: 16,
           child: GestureDetector(
-            onTap: () => Navigator.pop(context),
+            onTap: () => ref.read(merchantDashboardViewmodelProvider.notifier).navigateBack(context),
             child: Container(
               width: 46,
               height: 46,
@@ -181,7 +211,7 @@ class _MerchantDashboardPageState extends ConsumerState<MerchantDashboardPage> {
                 ),
               ),
             ),
-            
+
             // Scrollable error content
             Expanded(
               child: SingleChildScrollView(
@@ -194,7 +224,8 @@ class _MerchantDashboardPageState extends ConsumerState<MerchantDashboardPage> {
                     SizedBox(height: 16),
                     Text(
                       'Error loading merchant data',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                      style:
+                          TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
                     ),
                     SizedBox(height: 8),
                     Text(
@@ -205,10 +236,14 @@ class _MerchantDashboardPageState extends ConsumerState<MerchantDashboardPage> {
                     SizedBox(height: 16),
                     ElevatedButton(
                       onPressed: () {
-                        ref.read(merchantDashboardViewmodelProvider.notifier).loadMerchantData();
+                        ref
+                            .read(merchantDashboardViewmodelProvider.notifier)
+                            .loadMerchantData();
                       },
-                      style: ElevatedButton.styleFrom(backgroundColor: MyColor.orange),
-                      child: Text('Retry', style: TextStyle(color: Colors.white)),
+                      style: ElevatedButton.styleFrom(
+                          backgroundColor: MyColor.orange),
+                      child:
+                          Text('Retry', style: TextStyle(color: Colors.white)),
                     ),
                     SizedBox(height: 50),
                   ],
@@ -217,13 +252,13 @@ class _MerchantDashboardPageState extends ConsumerState<MerchantDashboardPage> {
             ),
           ],
         ),
-        
+
         // Floating Back Button
         Positioned(
           top: 8,
           left: 16,
           child: GestureDetector(
-            onTap: () => Navigator.pop(context),
+            onTap: () => ref.read(merchantDashboardViewmodelProvider.notifier).navigateBack(context),
             child: Container(
               width: 46,
               height: 46,
@@ -275,7 +310,7 @@ class _MerchantDashboardPageState extends ConsumerState<MerchantDashboardPage> {
                 zoomControlsEnabled: false,
               ),
             ),
-            
+
             // Scrollable Content Section
             Expanded(
               child: SingleChildScrollView(
@@ -285,12 +320,12 @@ class _MerchantDashboardPageState extends ConsumerState<MerchantDashboardPage> {
                   children: [
                     // Merchant Info Card
                     _buildMerchantInfoCard(merchant),
-                    
+
                     SizedBox(height: 20),
-                    
+
                     // Control Buttons
                     _buildControlButtons(merchant, liveTrackingState),
-                    
+
                     // Add some bottom padding for better scrolling experience
                     SizedBox(height: 40),
                   ],
@@ -299,13 +334,13 @@ class _MerchantDashboardPageState extends ConsumerState<MerchantDashboardPage> {
             ),
           ],
         ),
-        
+
         // Floating Back Button
         Positioned(
           top: 8,
           left: 16,
           child: GestureDetector(
-            onTap: () => Navigator.pop(context),
+            onTap: () => ref.read(merchantDashboardViewmodelProvider.notifier).navigateBack(context),
             child: Container(
               width: 46,
               height: 46,
@@ -352,22 +387,24 @@ class _MerchantDashboardPageState extends ConsumerState<MerchantDashboardPage> {
               borderRadius: BorderRadius.circular(8),
               color: Colors.grey[200],
             ),
-            child: merchant.merchantImgUrl != null && merchant.merchantImgUrl!.isNotEmpty
+            child: merchant.merchantImgUrl != null &&
+                    merchant.merchantImgUrl!.isNotEmpty
                 ? ClipRRect(
                     borderRadius: BorderRadius.circular(8),
                     child: Image.network(
                       merchant.merchantImgUrl!,
                       fit: BoxFit.cover,
                       errorBuilder: (context, error, stackTrace) {
-                        return Icon(Icons.store, color: Colors.grey[400], size: 30);
+                        return Icon(Icons.store,
+                            color: Colors.grey[400], size: 30);
                       },
                     ),
                   )
                 : Icon(Icons.store, color: Colors.grey[400], size: 30),
           ),
-          
+
           SizedBox(width: 16),
-          
+
           // Merchant Details
           Expanded(
             child: Column(
@@ -397,7 +434,8 @@ class _MerchantDashboardPageState extends ConsumerState<MerchantDashboardPage> {
                     Container(
                       padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
-                        color: merchant.merchantStatus ? Colors.green : Colors.red,
+                        color:
+                            merchant.merchantStatus ? Colors.green : Colors.red,
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
@@ -414,23 +452,23 @@ class _MerchantDashboardPageState extends ConsumerState<MerchantDashboardPage> {
               ],
             ),
           ),
-          
+
           // Status Toggle
           Switch(
             value: merchant.merchantStatus,
             onChanged: (value) async {
               Logger.log("Toggling merchant status to: $value");
-              
+
               // Show loading for status update
               Loading.show(context);
-              
+
               try {
                 await ref
                     .read(merchantDashboardViewmodelProvider.notifier)
                     .updateMerchantStatus(value);
-                
+
                 Loading.hide();
-                
+
                 // Show success message
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
@@ -443,7 +481,7 @@ class _MerchantDashboardPageState extends ConsumerState<MerchantDashboardPage> {
                 }
               } catch (e) {
                 Loading.hide();
-                
+
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
@@ -479,8 +517,12 @@ class _MerchantDashboardPageState extends ConsumerState<MerchantDashboardPage> {
               Row(
                 children: [
                   Icon(
-                    liveTrackingState.isEnabled ? Icons.gps_fixed : Icons.gps_off,
-                    color: liveTrackingState.isEnabled ? Colors.green : MyColor.orange,
+                    liveTrackingState.isEnabled
+                        ? Icons.gps_fixed
+                        : Icons.gps_off,
+                    color: liveTrackingState.isEnabled
+                        ? Colors.green
+                        : MyColor.orange,
                     size: 20,
                   ),
                   SizedBox(width: 8),
@@ -512,8 +554,8 @@ class _MerchantDashboardPageState extends ConsumerState<MerchantDashboardPage> {
                   Spacer(),
                   Switch(
                     value: liveTrackingState.isEnabled,
-                    onChanged: liveTrackingState.isInitializing 
-                        ? null 
+                    onChanged: liveTrackingState.isInitializing
+                        ? null
                         : (value) => _handleLiveTrackingToggle(value),
                     activeColor: Colors.green,
                   ),
@@ -551,9 +593,9 @@ class _MerchantDashboardPageState extends ConsumerState<MerchantDashboardPage> {
             ],
           ),
         ),
-        
+
         SizedBox(height: 12),
-        
+
         // Control Buttons
         _buildControlButton(
           icon: Icons.location_on,
@@ -562,9 +604,9 @@ class _MerchantDashboardPageState extends ConsumerState<MerchantDashboardPage> {
           color: MyColor.orange,
           onTap: () => _handleManualLocationUpdate(liveTrackingState, merchant),
         ),
-        
+
         SizedBox(height: 12),
-        
+
         _buildControlButton(
           icon: Icons.edit,
           title: 'Edit Profile Penjual',
@@ -572,23 +614,17 @@ class _MerchantDashboardPageState extends ConsumerState<MerchantDashboardPage> {
           color: MyColor.orange,
           onTap: () {
             Logger.log("Edit profile tapped");
-            
+
             Loading.show(context);
-            
+
             // Small delay to show loading animation
             Future.delayed(Duration(milliseconds: 500), () {
               Loading.hide();
-              
+
               if (mounted) {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => EditMerchantProfilePage(),
-                  ),
-                ).then((_) {
-                  // Refresh data when returning from edit page
-                  ref.read(merchantDashboardViewmodelProvider.notifier).loadMerchantData();
-                });
+                ref.read(merchantDashboardViewmodelProvider.notifier).navigateToEditMerchant(
+                      context
+                    );
               }
             });
           },
@@ -670,13 +706,16 @@ class _MerchantDashboardPageState extends ConsumerState<MerchantDashboardPage> {
         _markers = {
           Marker(
             markerId: MarkerId('merchant_location'),
-            position: LatLng(merchant.merchantLocLat!, merchant.merchantLocLong!),
+            position:
+                LatLng(merchant.merchantLocLat!, merchant.merchantLocLong!),
             infoWindow: InfoWindow(
               title: merchant.merchantName ?? 'My Store',
               snippet: merchant.merchantStatus ? 'BUKA' : 'TUTUP',
             ),
             icon: BitmapDescriptor.defaultMarkerWithHue(
-              merchant.merchantStatus ? BitmapDescriptor.hueGreen : BitmapDescriptor.hueRed,
+              merchant.merchantStatus
+                  ? BitmapDescriptor.hueGreen
+                  : BitmapDescriptor.hueRed,
             ),
           ),
         };
@@ -692,19 +731,25 @@ class _MerchantDashboardPageState extends ConsumerState<MerchantDashboardPage> {
         final confirmed = await LiveTrackingDialog.showEnableDialog(context);
         if (confirmed == true) {
           Logger.log("User confirmed to enable live tracking");
-          
-          final success = await ref.read(liveTrackingNotifierProvider.notifier).startTracking();
-          
+
+          final success = await ref
+              .read(liveTrackingNotifierProvider.notifier)
+              .startTracking();
+
           if (success && mounted) {
             // Start periodic refresh for live tracking updates
-            ref.read(merchantDashboardViewmodelProvider.notifier).startLiveTrackingRefresh();
-            
+            ref
+                .read(merchantDashboardViewmodelProvider.notifier)
+                .startLiveTrackingRefresh();
+
             // Show success dialog
             LiveTrackingDialog.showSuccessEnableDialog(context);
-            
+
             // Refresh merchant data to get updated location
-            ref.read(merchantDashboardViewmodelProvider.notifier).loadMerchantData();
-            
+            ref
+                .read(merchantDashboardViewmodelProvider.notifier)
+                .loadMerchantData();
+
             Logger.log("Live tracking enabled successfully with map refresh");
           }
         } else {
@@ -715,12 +760,14 @@ class _MerchantDashboardPageState extends ConsumerState<MerchantDashboardPage> {
         final confirmed = await LiveTrackingDialog.showDisableDialog(context);
         if (confirmed == true) {
           Logger.log("User confirmed to disable live tracking");
-          
+
           await ref.read(liveTrackingNotifierProvider.notifier).stopTracking();
-          
+
           // Stop periodic refresh when live tracking is disabled
-          ref.read(merchantDashboardViewmodelProvider.notifier).stopLiveTrackingRefresh();
-          
+          ref
+              .read(merchantDashboardViewmodelProvider.notifier)
+              .stopLiveTrackingRefresh();
+
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
@@ -730,8 +777,9 @@ class _MerchantDashboardPageState extends ConsumerState<MerchantDashboardPage> {
               ),
             );
           }
-          
-          Logger.log("Live tracking disabled successfully, map refresh stopped");
+
+          Logger.log(
+              "Live tracking disabled successfully, map refresh stopped");
         } else {
           Logger.log("User cancelled live tracking deactivation");
         }
@@ -751,14 +799,15 @@ class _MerchantDashboardPageState extends ConsumerState<MerchantDashboardPage> {
   }
 
   /// Handle manual location update
-  Future<void> _handleManualLocationUpdate(LiveTrackingState liveTrackingState, merchant) async {
+  Future<void> _handleManualLocationUpdate(
+      LiveTrackingState liveTrackingState, merchant) async {
     try {
       Logger.log("Manual location update tapped");
 
       // Check if live tracking is enabled
       if (liveTrackingState.isEnabled) {
         Logger.log("Live tracking is enabled, showing warning message");
-        
+
         // Show snackbar warning that live tracking must be turned off first
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -788,13 +837,16 @@ class _MerchantDashboardPageState extends ConsumerState<MerchantDashboardPage> {
         return;
       }
 
-      Logger.log("Live tracking is disabled, proceeding with manual location update");
+      Logger.log(
+          "Live tracking is disabled, proceeding with manual location update");
 
       // Get current merchant location for initial map position
       LatLng? initialLocation;
       if (merchant.merchantLocLat != null && merchant.merchantLocLong != null) {
-        initialLocation = LatLng(merchant.merchantLocLat!, merchant.merchantLocLong!);
-        Logger.log("Using current merchant location as initial: $initialLocation");
+        initialLocation =
+            LatLng(merchant.merchantLocLat!, merchant.merchantLocLong!);
+        Logger.log(
+            "Using current merchant location as initial: $initialLocation");
       } else {
         Logger.log("No current merchant location, using default location");
         // Use default Jakarta location if no current location
@@ -814,8 +866,9 @@ class _MerchantDashboardPageState extends ConsumerState<MerchantDashboardPage> {
       Loading.hide();
 
       // Show map picker dialog
-      Logger.log("Opening map picker dialog with initial location: $initialLocation");
-      
+      Logger.log(
+          "Opening map picker dialog with initial location: $initialLocation");
+
       final selectedLocation = await showDialog<LatLng>(
         context: context,
         barrierDismissible: false, // Prevent dismissing by tapping outside
@@ -826,7 +879,7 @@ class _MerchantDashboardPageState extends ConsumerState<MerchantDashboardPage> {
 
       if (selectedLocation != null) {
         Logger.log("User selected new location: $selectedLocation");
-        
+
         // Show loading while updating location
         Loading.show(context);
 
@@ -862,10 +915,9 @@ class _MerchantDashboardPageState extends ConsumerState<MerchantDashboardPage> {
           }
 
           Logger.log("Location updated successfully");
-
         } catch (e) {
           Loading.hide();
-          
+
           Logger.error("Failed to update merchant location", error: e);
 
           if (mounted) {
@@ -876,7 +928,8 @@ class _MerchantDashboardPageState extends ConsumerState<MerchantDashboardPage> {
                     Icon(Icons.error, color: Colors.white, size: 20),
                     SizedBox(width: 8),
                     Expanded(
-                      child: Text('Gagal memperbarui lokasi. Silakan coba lagi.'),
+                      child:
+                          Text('Gagal memperbarui lokasi. Silakan coba lagi.'),
                     ),
                   ],
                 ),
@@ -898,7 +951,6 @@ class _MerchantDashboardPageState extends ConsumerState<MerchantDashboardPage> {
         Logger.log("User cancelled location selection");
         // User cancelled - no action needed, dialog already popped
       }
-
     } catch (e) {
       Loading.hide();
       Logger.error("Error in manual location update", error: e);

@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:temulapak_app/data/network/login_service.dart';
 import 'package:temulapak_app/data/network/notification_service.dart';
@@ -31,11 +30,5 @@ class LoginViewModel extends StateNotifier<LoginState> {
       Logger.error("Google Sign In Error", error: e);
       state = state.copyWith(isLoading: false, error: e.toString(), user: null);
     }
-  }
-
-  Future<void> signOut() async {
-    state = state.copyWith(isLoading: true);
-    await _loginModel.signOut();
-    state = LoginState();
   }
 }
