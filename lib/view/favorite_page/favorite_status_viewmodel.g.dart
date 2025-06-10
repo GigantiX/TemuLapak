@@ -9,9 +9,7 @@ part of 'favorite_status_viewmodel.dart';
 String _$favoriteServiceStatusHash() =>
     r'6014a0a35aa1173eec0c4933f87e308c3b3b4db2';
 
-/// Provider untuk FavoriteService (shared)
-///
-/// Copied from [favoriteServiceStatus].
+/// See also [favoriteServiceStatus].
 @ProviderFor(favoriteServiceStatus)
 final favoriteServiceStatusProvider =
     AutoDisposeProvider<FavoriteService>.internal(
@@ -27,7 +25,7 @@ final favoriteServiceStatusProvider =
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef FavoriteServiceStatusRef = AutoDisposeProviderRef<FavoriteService>;
-String _$favoriteStatusHash() => r'94c1e4bad0ebadb2c1fac1de8f0ac42595145a99';
+String _$favoriteStatusHash() => r'05f3d47ec88c2a1218e0ee09255ccd99a74bd3fa';
 
 /// Copied from Dart SDK
 class _SystemHash {
@@ -59,28 +57,16 @@ abstract class _$FavoriteStatus
   );
 }
 
-/// Favorite Status Provider untuk specific merchant
-/// Ini akan digunakan untuk tombol favorite di merchant detail
-///
-/// Copied from [FavoriteStatus].
+/// See also [FavoriteStatus].
 @ProviderFor(FavoriteStatus)
 const favoriteStatusProvider = FavoriteStatusFamily();
 
-/// Favorite Status Provider untuk specific merchant
-/// Ini akan digunakan untuk tombol favorite di merchant detail
-///
-/// Copied from [FavoriteStatus].
+/// See also [FavoriteStatus].
 class FavoriteStatusFamily extends Family<AppState<bool, Exception>> {
-  /// Favorite Status Provider untuk specific merchant
-  /// Ini akan digunakan untuk tombol favorite di merchant detail
-  ///
-  /// Copied from [FavoriteStatus].
+  /// See also [FavoriteStatus].
   const FavoriteStatusFamily();
 
-  /// Favorite Status Provider untuk specific merchant
-  /// Ini akan digunakan untuk tombol favorite di merchant detail
-  ///
-  /// Copied from [FavoriteStatus].
+  /// See also [FavoriteStatus].
   FavoriteStatusProvider call(
     String merchantId,
   ) {
@@ -113,16 +99,10 @@ class FavoriteStatusFamily extends Family<AppState<bool, Exception>> {
   String? get name => r'favoriteStatusProvider';
 }
 
-/// Favorite Status Provider untuk specific merchant
-/// Ini akan digunakan untuk tombol favorite di merchant detail
-///
-/// Copied from [FavoriteStatus].
+/// See also [FavoriteStatus].
 class FavoriteStatusProvider extends AutoDisposeNotifierProviderImpl<
     FavoriteStatus, AppState<bool, Exception>> {
-  /// Favorite Status Provider untuk specific merchant
-  /// Ini akan digunakan untuk tombol favorite di merchant detail
-  ///
-  /// Copied from [FavoriteStatus].
+  /// See also [FavoriteStatus].
   FavoriteStatusProvider(
     String merchantId,
   ) : this._internal(
@@ -213,12 +193,9 @@ class _FavoriteStatusProviderElement extends AutoDisposeNotifierProviderElement<
 }
 
 String _$batchFavoriteStatusHash() =>
-    r'b80b604b3deafd8d135271bd2395b1f22b84951a';
+    r'd6c9acb9047a27611fd5b4c6c944137c08e10f8c';
 
-/// Provider untuk batch checking multiple merchants
-/// Berguna untuk list page yang menampilkan banyak merchant
-///
-/// Copied from [BatchFavoriteStatus].
+/// See also [BatchFavoriteStatus].
 @ProviderFor(BatchFavoriteStatus)
 final batchFavoriteStatusProvider = AutoDisposeNotifierProvider<
     BatchFavoriteStatus, AppState<Map<String, bool>, Exception>>.internal(
@@ -233,11 +210,9 @@ final batchFavoriteStatusProvider = AutoDisposeNotifierProvider<
 
 typedef _$BatchFavoriteStatus
     = AutoDisposeNotifier<AppState<Map<String, bool>, Exception>>;
-String _$favoriteHelperHash() => r'8de6db6e807f7a4bc3d1e294f59262acf5ecf86e';
+String _$favoriteHelperHash() => r'885d9437ea5d03019aa2af52610bb4ec6c41e0f0';
 
-/// Helper provider untuk quick access ke favorite service
-///
-/// Copied from [FavoriteHelper].
+/// See also [FavoriteHelper].
 @ProviderFor(FavoriteHelper)
 final favoriteHelperProvider = AutoDisposeNotifierProvider<FavoriteHelper,
     AppState<String, Exception>>.internal(

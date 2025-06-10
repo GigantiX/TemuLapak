@@ -1,14 +1,9 @@
-// File: lib/view/list_merchant_page/list_merchant_page.dart
-// VERIFIED: Fixed MerchantWidget constructor calls with proper parameters
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:temulapak_app/assets/mycolor.dart';
-// import 'package:temulapak_app/model/merchant/merchant_model.dart';
 import 'package:temulapak_app/utils/logger.dart';
 import 'package:temulapak_app/view/list_merchant_page/list_merchant_viewmodel.dart';
-import 'package:temulapak_app/view/merchant_detail_page/merchant_detail_page.dart';
 import 'package:temulapak_app/view/widget/merchant_widget.dart';
 
 class ListMerchantPage extends ConsumerStatefulWidget {
@@ -28,8 +23,6 @@ class _ListMerchantPageState extends ConsumerState<ListMerchantPage> {
   @override
   void initState() {
     super.initState();
-    
-    // Auto-fetch merchants when page loads
     Future.microtask(() {
       ref.read(listMerchantViewModelProvider.notifier).fetchMerchants(widget.category);
     });
@@ -57,7 +50,6 @@ class _ListMerchantPageState extends ConsumerState<ListMerchantPage> {
           onPressed: () => Navigator.pop(context),
         ),
         actions: [
-          // Filter Button
           PopupMenuButton<MerchantFilter>(
             icon: Icon(
               Icons.filter_list,
@@ -65,9 +57,7 @@ class _ListMerchantPageState extends ConsumerState<ListMerchantPage> {
             ),
             onSelected: (filter) {
               Logger.log("Filter selected: ${filter.displayName}");
-              // Update filter state
               ref.read(merchantFilterStateProvider.notifier).setFilter(filter);
-              // Apply filter in ViewModel
               ref.read(listMerchantViewModelProvider.notifier).applyFilter(filter);
             },
             itemBuilder: (context) => [
@@ -181,7 +171,6 @@ class _ListMerchantPageState extends ConsumerState<ListMerchantPage> {
     
     return Column(
       children: [
-        // Filter Info Bar
         Container(
           width: double.infinity,
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
@@ -217,7 +206,6 @@ class _ListMerchantPageState extends ConsumerState<ListMerchantPage> {
           ),
         ),
         
-        // Merchant List
         Expanded(
           child: ListView.builder(
             padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -230,17 +218,10 @@ class _ListMerchantPageState extends ConsumerState<ListMerchantPage> {
               return MerchantWidget(
                 merchant: merchant,
                 onTap: () {
-                  Logger.log("Clicked on merchant: ${merchant.merchantName}");
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => MerchantDetailPage(merchant: merchant),
-                    ),
-                  );
+                  ref.read(listMerchantViewModelProvider.notifier).navigateToMerchantDetail(context, merchant);
                 },
-                // ENHANCED: Now passing real calculated distance
-                showFavoriteButton: true, // Show favorite button in list
-                distance: distance, // Real calculated distance from ViewModel
+                showFavoriteButton: true, 
+                distance: distance, 
               );
             },
           ),

@@ -4,13 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:temulapak_app/assets/mycolor.dart';
-import 'package:temulapak_app/model/state/app_state.dart';
 import 'package:temulapak_app/utils/logger.dart';
 import 'package:temulapak_app/view/home_page/home_viewmodel.dart';
-import 'package:temulapak_app/view/list_merchant_page/list_merchant_page.dart';
 import 'package:temulapak_app/view/list_merchant_page/list_merchant_viewmodel.dart';
-import 'package:temulapak_app/view/merchant_detail_page/merchant_detail_page.dart';
-import 'package:temulapak_app/view/notification_page/notification_page.dart';
 import 'package:temulapak_app/view/widget/merchant_widget.dart';
 
 class HomePage extends ConsumerStatefulWidget {
@@ -21,7 +17,6 @@ class HomePage extends ConsumerStatefulWidget {
 }
 
 class _HomePageState extends ConsumerState<HomePage> {
-  // ADDED: ScrollController for better scroll behavior
   final ScrollController _scrollController = ScrollController();
 
   @override
@@ -29,7 +24,7 @@ class _HomePageState extends ConsumerState<HomePage> {
     super.initState();
 
     Future.microtask(() {
-      _loadInitialData();
+      ref.read(enhancedHomeStateNotifierProvider.notifier).initializeHomeData();
     });
   }
 
@@ -39,77 +34,39 @@ class _HomePageState extends ConsumerState<HomePage> {
     super.dispose();
   }
 
-  // ADDED: Method to load all initial data
-  void _loadInitialData() {
-    ref.read(homeViewmodelProvider.notifier).getUser();
-    ref.read(addressViewModelProvider.notifier).getAddress();
-    ref.read(recommendedMerchantsProvider.notifier).getRecommendedMerchants();
-  }
-
-  // ADDED: Pull-to-refresh method
-  Future<void> _onRefresh() async {
-    try {
-      Logger.log("HOME_PAGE - Pull to refresh triggered");
-
-      // Refresh all data sources
-      await Future.wait([
-        ref.read(homeViewmodelProvider.notifier).getUser(),
-        ref.read(addressViewModelProvider.notifier).getAddress(),
-        ref
-            .read(recommendedMerchantsProvider.notifier)
-            .getRecommendedMerchants(),
-      ]);
-
-      Logger.log("HOME_PAGE - Pull to refresh completed");
-    } catch (e) {
-      Logger.error("HOME_PAGE - Error during refresh", error: e);
-
-      // Show error message to user
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Gagal memperbarui data. Silakan coba lagi.'),
-            backgroundColor: MyColor.red,
-            duration: Duration(seconds: 3),
-            action: SnackBarAction(
-              label: 'Coba Lagi',
-              textColor: Colors.white,
-              onPressed: _onRefresh,
-            ),
-          ),
-        );
-      }
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
-    final userState = ref.watch(homeViewmodelProvider);
-    final addressState = ref.watch(addressViewModelProvider);
-    final recommendedState = ref.watch(recommendedMerchantsProvider);
+    final enhancedState = ref.watch(enhancedHomeStateNotifierProvider);
+    
+    // Command listener
+    ref.listen(
+      enhancedHomeStateNotifierProvider.select((s) => s.command),
+      (_, command) => _executeCommand(context, command),
+    );
 
     return Scaffold(
       backgroundColor: MyColor.whitePlain,
       body: SafeArea(
         child: RefreshIndicator(
-          // ADDED: Pull-to-refresh functionality
-          onRefresh: _onRefresh,
+          onRefresh: () async {
+            Logger.log("HOME_PAGE - Pull to refresh triggered");
+            await ref.read(enhancedHomeStateNotifierProvider.notifier).refreshAllData();
+            Logger.log("HOME_PAGE - Pull to refresh completed");
+          },
           color: MyColor.orange,
           backgroundColor: Colors.white,
           displacement: 40,
           child: SingleChildScrollView(
             controller: _scrollController,
-            // IMPORTANT: Always scrollable for pull-to-refresh to work
             physics: const AlwaysScrollableScrollPhysics(),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.start,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                homepageAppBar(userState, addressState),
-                homepageCarousel(ref),
-                // UPDATED: Responsive category section
+                _buildHomepageAppBar(enhancedState),
+                _buildHomepageCarousel(),
                 _buildResponsiveCategory(context),
-                _buildRecommendedSection(recommendedState),
+                _buildRecommendedSection(enhancedState),
               ],
             ),
           ),
@@ -118,31 +75,168 @@ class _HomePageState extends ConsumerState<HomePage> {
     );
   }
 
-  // UPDATED: Responsive category section that adapts to screen size
-  Widget _buildResponsiveCategory(BuildContext context) {
-    // Get screen dimensions for responsive design
-    final screenWidth = MediaQuery.of(context).size.width;
-    final screenHeight = MediaQuery.of(context).size.height;
+  // Command execution
+  void _executeCommand(BuildContext context, ViewModelCommand? command) {
+    if (command == null) return;
+    
+    if (command is NavigateCommand) {
+      Navigator.push(
+        context, 
+        MaterialPageRoute(builder: (_) => command.page)
+      );
+    } else if (command is ShowSnackbarCommand) {
+      Logger.log("HOME_PAGE - Showing snackbar: ${command.message}");
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(command.message),
+          backgroundColor: command.backgroundColor,
+          duration: Duration(seconds: command.durationSeconds),
+          behavior: SnackBarBehavior.floating,
+          action: SnackBarAction(
+            label: 'Coba Lagi',
+            textColor: Colors.white,
+            onPressed: () {
+              Logger.log("HOME_PAGE - Retry button clicked");
+              ref.read(enhancedHomeStateNotifierProvider.notifier).refreshAllData();
+            },
+          ),
+        ),
+      );
+    }
+  }
 
-    // Calculate responsive values based on screen size
+  // App bar
+  Widget _buildHomepageAppBar(EnhancedHomeState enhancedState) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          CircleAvatar(
+            radius: 20,
+            backgroundImage: enhancedState.user?.photoURL != null
+                ? NetworkImage(enhancedState.user!.photoURL!)
+                : const AssetImage("lib/assets/images/thumbnail.jpeg") as ImageProvider,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text("Lokasi saya"),
+                Row(
+                  children: [
+                    Icon(
+                      Icons.location_on,
+                      color: MyColor.orange,
+                      size: 20,
+                    ),
+                    Expanded(
+                      child: _buildAddressDisplay(enhancedState),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          IconButton(
+            onPressed: () {
+              Logger.log("Clicked on notifications icon");
+              ref.read(enhancedHomeStateNotifierProvider.notifier).navigateToNotification();
+            },
+            icon: const Icon(Icons.notifications_none),
+            color: MyColor.blackPlain,
+            iconSize: 33,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAddressDisplay(EnhancedHomeState enhancedState) {
+    if (enhancedState.isLoading && enhancedState.address == null) {
+      return Shimmer.fromColors(
+        baseColor: Colors.grey[300]!,
+        highlightColor: Colors.grey[100]!,
+        child: Container(
+          height: 15,
+          width: 100,
+          color: Colors.white,
+        ),
+      );
+    }
+
+    return Text(
+      enhancedState.address ?? "Location not available",
+      style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+    );
+  }
+
+  // Carousel
+  Widget _buildHomepageCarousel() {
+    final List<String> imgList = [
+      'https://firebasestorage.googleapis.com/v0/b/project-database-63eea.appspot.com/o/banner%2FBannerTemuLapak1.png?alt=media&token=4b81f0dc-7ca2-4f90-91ec-c6bee743b622',
+      'https://firebasestorage.googleapis.com/v0/b/project-database-63eea.appspot.com/o/banner%2FBannerTemuLapak2.png?alt=media&token=c72b4d9a-db9f-4b45-87d3-9fdcaa084e9b',
+      'https://firebasestorage.googleapis.com/v0/b/project-database-63eea.appspot.com/o/banner%2FBannerTemuLapak3.png?alt=media&token=54b26ed2-b14f-42db-93a2-5ae573bbbc6b',
+    ];
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      child: CarouselSlider.builder(
+        itemCount: imgList.length,
+        itemBuilder: (context, index, realIndex) {
+          return ClipRRect(
+            borderRadius: BorderRadius.circular(10),
+            child: Image.network(
+              imgList[index],
+              fit: BoxFit.cover,
+              width: 280,
+              height: 160,
+              loadingBuilder: (context, child, loadingProgress) {
+                if (loadingProgress == null) return child;
+                return _buildShimmer();
+              },
+              errorBuilder: (context, error, stackTrace) {
+                return Image.asset(
+                  "lib/assets/images/thumbnail.jpeg",
+                  fit: BoxFit.cover,
+                  width: 280,
+                  height: 160,
+                );
+              },
+            ),
+          );
+        },
+        options: CarouselOptions(
+          height: 160,
+          aspectRatio: 16 / 9,
+          autoPlay: true,
+          onPageChanged: (index, reason) {
+            ref.read(carouselIndexProvider.notifier).state = index;
+          },
+        ),
+      ),
+    );
+  }
+
+  // Category section
+  Widget _buildResponsiveCategory(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+
     final isSmallScreen = screenWidth < 360;
     final isMediumScreen = screenWidth >= 360 && screenWidth < 400;
 
-    // Responsive padding
-    final horizontalPadding =
-        isSmallScreen ? 16.0 : (isMediumScreen ? 20.0 : 25.0);
+    final horizontalPadding = isSmallScreen ? 16.0 : (isMediumScreen ? 20.0 : 25.0);
     final verticalPadding = isSmallScreen ? 8.0 : 10.0;
 
-    // Responsive category item size
-    final categoryHeight =
-        isSmallScreen ? 65.0 : (isMediumScreen ? 68.0 : 72.0);
+    final categoryHeight = isSmallScreen ? 65.0 : (isMediumScreen ? 68.0 : 72.0);
     final iconSize = isSmallScreen ? 22.0 : (isMediumScreen ? 24.0 : 25.0);
     final fontSize = isSmallScreen ? 10.0 : (isMediumScreen ? 11.0 : 12.0);
     final spacing = isSmallScreen ? 6.0 : 8.0;
     final textSpacing = isSmallScreen ? 5.0 : 7.0;
-
-    Logger.log(
-        "HOME_PAGE - Screen dimensions: ${screenWidth}x$screenHeight, isSmall: $isSmallScreen");
 
     return Container(
       width: double.infinity,
@@ -154,97 +248,72 @@ class _HomePageState extends ConsumerState<HomePage> {
         children: [
           Expanded(
             child: _buildResponsiveCategoryItem(
-                context: context,
-                icon: Icon(Icons.share_location,
-                    color: MyColor.orange, size: iconSize),
-                label: "Terdekat",
-                height: categoryHeight,
-                fontSize: fontSize,
-                spacing: textSpacing,
-                onTap: () {
-                  Logger.log("Clicked on Terdekat");
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => ListMerchantPage(
-                        category: MerchantCategory.nearest,
-                      ),
-                    ),
-                  );
-                }),
+              context: context,
+              icon: Icon(Icons.share_location, color: MyColor.orange, size: iconSize),
+              label: "Terdekat",
+              height: categoryHeight,
+              fontSize: fontSize,
+              spacing: textSpacing,
+              onTap: () {
+                Logger.log("Clicked on Terdekat");
+                ref.read(enhancedHomeStateNotifierProvider.notifier)
+                    .navigateToListMerchant(MerchantCategory.nearest);
+              },
+            ),
           ),
           SizedBox(width: spacing),
           Expanded(
             child: _buildResponsiveCategoryItem(
-                context: context,
-                icon: FaIcon(FontAwesomeIcons.whiskeyGlass,
-                    color: MyColor.orange, size: iconSize),
-                label: "Minuman",
-                height: categoryHeight,
-                fontSize: fontSize,
-                spacing: textSpacing,
-                onTap: () {
-                  Logger.log("Clicked on Minuman");
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => ListMerchantPage(
-                        category: MerchantCategory.drinks,
-                      ),
-                    ),
-                  );
-                }),
+              context: context,
+              icon: FaIcon(FontAwesomeIcons.whiskeyGlass, color: MyColor.orange, size: iconSize),
+              label: "Minuman",
+              height: categoryHeight,
+              fontSize: fontSize,
+              spacing: textSpacing,
+              onTap: () {
+                Logger.log("Clicked on Minuman");
+                ref.read(enhancedHomeStateNotifierProvider.notifier)
+                    .navigateToListMerchant(MerchantCategory.drinks);
+              },
+            ),
           ),
           SizedBox(width: spacing),
           Expanded(
             child: _buildResponsiveCategoryItem(
-                context: context,
-                icon: FaIcon(FontAwesomeIcons.bowlFood,
-                    color: MyColor.orange, size: iconSize),
-                label: "Makanan",
-                height: categoryHeight,
-                fontSize: fontSize,
-                spacing: textSpacing,
-                onTap: () {
-                  Logger.log("Clicked on Makanan");
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => ListMerchantPage(
-                        category: MerchantCategory.food,
-                      ),
-                    ),
-                  );
-                }),
+              context: context,
+              icon: FaIcon(FontAwesomeIcons.bowlFood, color: MyColor.orange, size: iconSize),
+              label: "Makanan",
+              height: categoryHeight,
+              fontSize: fontSize,
+              spacing: textSpacing,
+              onTap: () {
+                Logger.log("Clicked on Makanan");
+                ref.read(enhancedHomeStateNotifierProvider.notifier)
+                    .navigateToListMerchant(MerchantCategory.food);
+              },
+            ),
           ),
           SizedBox(width: spacing),
           Expanded(
             child: _buildResponsiveCategoryItem(
-                context: context,
-                icon: FaIcon(FontAwesomeIcons.cookieBite,
-                    color: MyColor.orange, size: iconSize),
-                label: "Cemilan",
-                height: categoryHeight,
-                fontSize: fontSize,
-                spacing: textSpacing,
-                onTap: () {
-                  Logger.log("Clicked on Cemilan");
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => ListMerchantPage(
-                        category: MerchantCategory.snacks,
-                      ),
-                    ),
-                  );
-                }),
+              context: context,
+              icon: FaIcon(FontAwesomeIcons.cookieBite, color: MyColor.orange, size: iconSize),
+              label: "Cemilan",
+              height: categoryHeight,
+              fontSize: fontSize,
+              spacing: textSpacing,
+              onTap: () {
+                Logger.log("Clicked on Cemilan");
+                ref.read(enhancedHomeStateNotifierProvider.notifier)
+                    .navigateToListMerchant(MerchantCategory.snacks);
+              },
+            ),
           ),
         ],
       ),
     );
   }
 
-  // ADDED: Responsive category item widget with adaptive sizing
   Widget _buildResponsiveCategoryItem({
     required BuildContext context,
     required Widget icon,
@@ -261,27 +330,25 @@ class _HomePageState extends ConsumerState<HomePage> {
         decoration: BoxDecoration(
           color: MyColor.white,
           borderRadius: BorderRadius.circular(7),
-          // ADDED: Subtle shadow for better visual appeal
           boxShadow: [
             BoxShadow(
-              color: Colors.grey.withOpacity(0.1),
+              color: Colors.grey.withValues(alpha: 0.1),
               spreadRadius: 1,
               blurRadius: 2,
-              offset: Offset(0, 1),
+              offset: const Offset(0, 1),
             ),
           ],
         ),
         child: Padding(
           padding: EdgeInsets.symmetric(
             vertical: spacing,
-            horizontal: 4, // Minimal horizontal padding to prevent overflow
+            horizontal: 4,
           ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               icon,
               SizedBox(height: spacing),
-              // UPDATED: Responsive text with overflow protection
               Flexible(
                 child: Text(
                   label,
@@ -292,8 +359,6 @@ class _HomePageState extends ConsumerState<HomePage> {
                   textAlign: TextAlign.center,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  // ADDED: Scale text down if needed to fit
-                  textScaleFactor: 1.0,
                 ),
               ),
             ],
@@ -303,14 +368,14 @@ class _HomePageState extends ConsumerState<HomePage> {
     );
   }
 
-  // EXISTING: Build Recommended Section with MerchantWithDistance support
-  Widget _buildRecommendedSection(AppState recommendedState) {
+  // Recommended section
+  Widget _buildRecommendedSection(EnhancedHomeState enhancedState) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
+          const Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
@@ -319,48 +384,42 @@ class _HomePageState extends ConsumerState<HomePage> {
               ),
             ],
           ),
-          recommendedState.when(
-            idle: () => _buildEmptyRecommended(),
-            loading: () => _buildRecommendedShimmer(),
-            success: (merchantsWithDistance) {
-              if (merchantsWithDistance.isEmpty) {
-                return _buildEmptyRecommended();
-              }
-              return _buildRecommendedList(merchantsWithDistance);
-            },
-            error: (error, message) => _buildRecommendedError(message),
-          ),
+          _buildRecommendedContent(enhancedState),
         ],
       ),
     );
   }
 
-  Widget _buildRecommendedList(
-      List<MerchantWithDistanceHome> merchantsWithDistance) {
-    Logger.log(
-        "🏠 HOME_PAGE - Building recommended list with ${merchantsWithDistance.length} merchants");
+  Widget _buildRecommendedContent(EnhancedHomeState enhancedState) {
+    if (enhancedState.isLoading && enhancedState.recommendations.isEmpty) {
+      return _buildRecommendedShimmer();
+    }
 
+    if (enhancedState.recommendations.isEmpty) {
+      return _buildEmptyRecommended();
+    }
+
+    if (enhancedState.errorMessage != null) {
+      return _buildRecommendedError(enhancedState.errorMessage);
+    }
+
+    return _buildRecommendedList(enhancedState.recommendations);
+  }
+
+  Widget _buildRecommendedList(List<MerchantWithDistanceHome> merchantsWithDistance) {
     return Column(
       children: merchantsWithDistance.map<Widget>((merchantWithDistance) {
         final merchant = merchantWithDistance.merchant;
         final distance = merchantWithDistance.distance;
-
-        Logger.log(
-            "🏪 HOME_PAGE - Displaying: ${merchant.merchantName} (${distance?.toStringAsFixed(2)}km, pop: ${merchant.merchantPopularity ?? 0})");
 
         return Padding(
           padding: const EdgeInsets.only(bottom: 8),
           child: MerchantWidget(
             merchant: merchant,
             onTap: () {
-              Logger.log(
-                  "Clicked on recommended merchant: ${merchant.merchantName}");
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => MerchantDetailPage(merchant: merchant),
-                ),
-              );
+              Logger.log("Clicked on recommended merchant: ${merchant.merchantName}");
+              ref.read(enhancedHomeStateNotifierProvider.notifier)
+                  .navigateToMerchantDetail(merchant);
             },
             showFavoriteButton: true,
             distance: distance,
@@ -426,9 +485,9 @@ class _HomePageState extends ConsumerState<HomePage> {
       height: 120,
       width: double.infinity,
       decoration: BoxDecoration(
-        color: MyColor.red.withOpacity(0.1),
+        color: MyColor.red.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: MyColor.red.withOpacity(0.3)),
+        border: Border.all(color: MyColor.red.withValues(alpha: 0.3)),
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -450,9 +509,8 @@ class _HomePageState extends ConsumerState<HomePage> {
           const SizedBox(height: 8),
           TextButton(
             onPressed: () {
-              ref
-                  .read(recommendedMerchantsProvider.notifier)
-                  .getRecommendedMerchants();
+              Logger.log("HOME_PAGE - Retry recommendations button clicked");
+              ref.read(enhancedHomeStateNotifierProvider.notifier).refreshAllData();
             },
             child: Text(
               "Coba Lagi",
@@ -468,150 +526,19 @@ class _HomePageState extends ConsumerState<HomePage> {
     );
   }
 
-  Widget homepageAppBar(
-      AppState userState, AppState<String, Exception> address) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          CircleAvatar(
-            radius: 20,
-            backgroundImage: userState.maybeWhen(
-                success: (user) => user != null
-                    ? NetworkImage(user.photoURL!)
-                    : AssetImage("lib/assets/images/thumbnail.jpeg"),
-                orElse: () => AssetImage("lib/assets/images/thumbnail.jpeg")),
+  Widget _buildShimmer() {
+    return Shimmer.fromColors(
+      baseColor: Colors.grey[300]!,
+      highlightColor: Colors.grey[100]!,
+      child: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(10),
+            color: Colors.white,
           ),
-          SizedBox(width: 10),
-          Expanded(
-              child: Column(
-            mainAxisAlignment: MainAxisAlignment.start,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text("Lokasi saya"),
-              Row(
-                children: [
-                  Icon(
-                    Icons.location_on,
-                    color: MyColor.orange,
-                    size: 20,
-                  ),
-                  Expanded(
-                    child: address.maybeWhen(
-                      idle: () => Text("Fetching location...",
-                          style: TextStyle(
-                              fontSize: 15, fontWeight: FontWeight.w700)),
-                      loading: () => Shimmer.fromColors(
-                        baseColor: Colors.grey[300]!,
-                        highlightColor: Colors.grey[100]!,
-                        child: Container(
-                          height: 15,
-                          width: 100,
-                          color: Colors.white,
-                        ),
-                      ),
-                      success: (addressText) => Text(
-                        addressText,
-                        style: TextStyle(
-                            fontSize: 15, fontWeight: FontWeight.w700),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      error: (_, __) => Text(
-                        "Error fetching location",
-                        style: TextStyle(
-                            fontSize: 15, fontWeight: FontWeight.w700),
-                      ),
-                      orElse: () => Text(
-                        "Location not available",
-                        style: TextStyle(
-                            fontSize: 15, fontWeight: FontWeight.w700),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          )),
-          IconButton(
-            onPressed: () {
-              Logger.log("Clicked on notifications icon");
-              Navigator.push(
-                context, 
-                MaterialPageRoute(
-                  builder: (context) => const NotificationPage(),
-                ),
-                );
-            },
-            icon: const Icon(Icons.notifications_none),
-            color: MyColor.blackPlain,
-            iconSize: 33,
-          ),
-        ],
+        ),
       ),
     );
   }
-}
-
-// EXISTING: Carousel widget remains the same
-Widget homepageCarousel(WidgetRef ref) {
-  final List<String> imgList = [
-    'https://firebasestorage.googleapis.com/v0/b/project-database-63eea.appspot.com/o/banner%2FBannerTemuLapak1.png?alt=media&token=4b81f0dc-7ca2-4f90-91ec-c6bee743b622',
-    'https://firebasestorage.googleapis.com/v0/b/project-database-63eea.appspot.com/o/banner%2FBannerTemuLapak2.png?alt=media&token=c72b4d9a-db9f-4b45-87d3-9fdcaa084e9b',
-    'https://firebasestorage.googleapis.com/v0/b/project-database-63eea.appspot.com/o/banner%2FBannerTemuLapak3.png?alt=media&token=54b26ed2-b14f-42db-93a2-5ae573bbbc6b',
-  ];
-
-  return Padding(
-    padding: const EdgeInsets.symmetric(vertical: 10),
-    child: CarouselSlider.builder(
-        itemCount: imgList.length,
-        itemBuilder: (context, index, realIndex) {
-          return ClipRRect(
-            borderRadius: BorderRadius.circular(10),
-            child: Image.network(
-              imgList[index],
-              fit: BoxFit.cover,
-              width: 280,
-              height: 160,
-              loadingBuilder: (context, child, loadingProgress) {
-                if (loadingProgress == null) return child;
-                return _buildShimmer();
-              },
-              errorBuilder: (context, error, stackTrace) {
-                return Image.asset(
-                  "lib/assets/images/thumbnail.jpeg",
-                  fit: BoxFit.cover,
-                  width: 280,
-                  height: 160,
-                );
-              },
-            ),
-          );
-        },
-        options: CarouselOptions(
-          height: 160,
-          aspectRatio: 16 / 9,
-          autoPlay: true,
-          onPageChanged: (index, reason) {
-            ref.read(carouselIndexProvider.notifier).state = index;
-          },
-        )),
-  );
-}
-
-Widget _buildShimmer() {
-  return Shimmer.fromColors(
-    baseColor: Colors.grey[300]!,
-    highlightColor: Colors.grey[100]!,
-    child: Padding(
-      padding: const EdgeInsets.all(8.0),
-      child: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(10),
-          color: Colors.white,
-        ),
-      ),
-    ),
-  );
 }
