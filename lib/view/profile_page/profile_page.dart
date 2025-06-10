@@ -1,20 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:temulapak_app/assets/mycolor.dart';
-import 'package:temulapak_app/utils/custom_dialog.dart';
-import 'package:temulapak_app/utils/loading/loading.dart';
-import 'package:temulapak_app/utils/logger.dart';
-import 'package:temulapak_app/utils/network_checker.dart';
-import 'package:temulapak_app/view/help_centre_page/help_center_page.dart';
-import 'package:temulapak_app/view/merchant_dashboard_page/merchant_dashboard_page.dart';
 import 'package:temulapak_app/view/profile_page/profile_viewmodel.dart';
-import 'package:temulapak_app/view/faq_page/faq_page.dart';
-import 'package:temulapak_app/view/about_page/about_page.dart';
-import 'package:temulapak_app/view/login_page/login_page.dart';
-import 'package:temulapak_app/view/login_page/login_viewmodel.dart';
-import 'package:temulapak_app/view/register_merchant_page/register_merchant_page.dart';
-import 'package:temulapak_app/view/widget/profile/profile_menu_item.dart';
-
 
 class ProfilePage extends ConsumerStatefulWidget {
   const ProfilePage({super.key});
@@ -34,7 +21,28 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
   @override
   Widget build(BuildContext context) {
     final userState = ref.watch(profileViewModelProvider);
-    final loginVM = ref.watch(loginViewModelProvider.notifier);
+    final profileVM = ref.watch(profileViewModelProvider.notifier);
+
+    // Handle state changes (loading, error, etc.)
+    userState.maybeWhen(
+      loading: () {
+        // Handle loading state if needed
+      },
+      error: (error, message) {
+        // Handle error state if needed
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(message ?? 'An error occurred'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+        });
+      },
+      orElse: () {},
+    );
 
     return Scaffold(
       backgroundColor: MyColor.orange,
@@ -145,7 +153,6 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
             SliverToBoxAdapter(
               child: Container(
                 width: double.infinity,
-                // FIXED: Remove fixed height constraints - let content determine height
                 constraints: BoxConstraints(
                   minHeight: MediaQuery.of(context).size.height * 0.6,
                 ),
@@ -159,7 +166,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                 child: Padding(
                   padding: const EdgeInsets.all(20),
                   child: Column(
-                    mainAxisSize: MainAxisSize.min, // FIXED: Allow column to size itself
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       const SizedBox(height: 20),
                       
@@ -183,62 +190,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                           color: Colors.transparent,
                           child: InkWell(
                             borderRadius: BorderRadius.circular(15),
-                            onTap: () {
-                              Logger.log("Tapped on Merchant Page");
-                              Loading.show(context);
-
-                              userState.maybeWhen(
-                                success: (user) {
-                                  if (user.isMerchant == true) {
-                                    Logger.log(
-                                        "User is a merchant, navigating to MerchantDashboardPage");
-                                    Future.delayed(Duration(milliseconds: 100),
-                                        () {
-                                      if (!context.mounted) return;
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (context) =>
-                                              MerchantDashboardPage(),
-                                        ),
-                                      ).then((_) {
-                                        Loading.hide();
-                                      });
-                                    });
-                                  } else {
-                                    Loading.hide();
-                                    Logger.log(
-                                        "User is not a merchant, navigating to RegisterMerchantPage");
-                                    Future.delayed(Duration(milliseconds: 100),
-                                        () {
-                                      if (!context.mounted) return;
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (context) =>
-                                              RegisterMerchantPage(),
-                                        ),
-                                      ).then((_) {});
-                                    });
-                                  }
-                                },
-                                orElse: () {
-                                  Logger.error("User data not available");
-                                  Future.delayed(Duration(milliseconds: 100),
-                                      () {
-                                    Loading.hide();
-                                    if (!context.mounted) return;
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text(
-                                            'Unable to access merchant page'),
-                                        backgroundColor: Colors.red,
-                                      ),
-                                    );
-                                  });
-                                },
-                              );
-                            },
+                            onTap: () => profileVM.navigateToMerchant(context),
                             child: const Padding(
                               padding: EdgeInsets.symmetric(horizontal: 20),
                               child: Row(
@@ -271,92 +223,31 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                       ),
 
                       // Menu Items
-                      ProfileMenuItem(
+                      _buildMenuItem(
                         icon: Icons.help_outline,
                         title: "FAQ",
                         subtitle: "Pertanyaan yang sering ditanyakan",
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const FaqPage(),
-                            ),
-                          );
-                        },
+                        onTap: () => profileVM.navigateToFAQ(context),
                       ),
-                      ProfileMenuItem(
+                      _buildMenuItem(
                         icon: Icons.support_agent,
                         title: "Bantuan & Dukungan",
                         subtitle: "Hubungi tim support kami",
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const HelpCenterPage(),
-                            ),
-                          );
-                        },
+                        onTap: () => profileVM.navigateToBantuan(context),
                       ),
-                      ProfileMenuItem(
+                      _buildMenuItem(
                         icon: Icons.info_outline,
                         title: "Tentang Aplikasi",
                         subtitle: "Informasi aplikasi",
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const AboutPage(),
-                            ),
-                          );
-                        },
+                        onTap: () => profileVM.navigateToTentang(context),
                       ),
-                      ProfileMenuItem(
+                      _buildMenuItem(
                         icon: Icons.logout,
                         title: "Keluar",
                         subtitle: "Keluar dari akun",
                         textColor: MyColor.red,
                         iconColor: MyColor.red,
-                        onTap: () {
-                          showDialog(
-                            context: context,
-                            builder: (context) {
-                              return CustomAlertDialog(
-                                title: "Logout",
-                                content: "Do you really want to logout?",
-                                confirmText: "Yes",
-                                cancelText: "No",
-                                icon: Icons.logout,
-                                iconColor: Colors.white,
-                                dialogColor: MyColor.red,
-                                onConfirm: () async {
-                                  Navigator.pop(context);
-                                  final success =
-                                      await NetworkChecker.instance.run(
-                                    context: context,
-                                    customOfflineMessage:
-                                        "Can't connect to the internet",
-                                    action: () async {
-                                      await loginVM.signOut();
-                                      return true;
-                                    },
-                                  );
-                                  if (success == true && context.mounted) {
-                                    Navigator.pushAndRemoveUntil(
-                                      context,
-                                      MaterialPageRoute(
-                                          builder: (context) =>
-                                              const LoginPage()),
-                                      (route) => false,
-                                    );
-                                  }
-                                },
-                                onCancel: () {
-                                  Navigator.pop(context);
-                                },
-                              );
-                            },
-                          );
-                        },
+                        onTap: () => profileVM.showLogoutDialog(context, ref),
                       ),
 
                       // Version text
@@ -369,7 +260,6 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                         ),
                       ),
 
-                      // FIXED: Add bottom padding for better scrolling experience
                       const SizedBox(height: 20),
                     ],
                   ),
@@ -382,6 +272,73 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
     );
   }
 
-
-  
+  Widget _buildMenuItem({
+    required IconData icon,
+    required String title,
+    String? subtitle,
+    required VoidCallback onTap,
+    Color? textColor,
+    Color? iconColor,
+  }) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: onTap,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: (iconColor ?? MyColor.orange).withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(
+                    icon,
+                    color: iconColor ?? MyColor.orange,
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: textColor ?? MyColor.blackPlain,
+                        ),
+                      ),
+                      if (subtitle != null) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          subtitle,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                Icon(
+                  Icons.arrow_forward_ios,
+                  color: Colors.grey[400],
+                  size: 16,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }

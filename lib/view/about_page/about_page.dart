@@ -234,16 +234,16 @@ class AboutPage extends StatelessWidget {
       {
         'name': 'Bagas Dwi Putra Majid',
         'email': 'bagas.dwi@binus.ac.id',
-        'role': 'Frontend Developer',
+        'role': 'Mobile Developer',
         'image':
             'https://firebasestorage.googleapis.com/v0/b/project-database-63eea.appspot.com/o/developer%2Fbagas.jpg?alt=media&token=65229bd6-f8c3-4d32-be2b-c83ef56958cb'
       },
       {
         'name': 'Gisela Audrey Limansagita',
-        'email': 'bagas.dwi@temulapak.com',
-        'role': 'Frontend Developer',
+        'email': 'gisela.limansagita@binus.ac.id',
+        'role': 'Mobile Developer',
         'image':
-            'https://firebasestorage.googleapis.com/v0/b/project-database-63eea.appspot.com/o/developer%2FIMG_2765_Cropped.JPG?alt=media&token=c4e4a87f-d578-41cc-94db-b5f9b260f719',
+            'https://firebasestorage.googleapis.com/v0/b/project-database-63eea.appspot.com/o/developer%2Fgisel.jpg?alt=media&token=e89559a1-26a4-46c4-8204-b616cd13a229',
       },
     ];
 
