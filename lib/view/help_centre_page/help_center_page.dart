@@ -93,7 +93,7 @@ class HelpCenterPage extends StatelessWidget {
               icon: Icons.message,
               title: "WhatsApp",
               subtitle: "Chat langsung dengan tim support",
-              value: "+62 812-3456-7890",
+              value: "+6282138894119",
               color: const Color(0xFF25D366),
             ),
             const SizedBox(height: 12),
@@ -102,7 +102,7 @@ class HelpCenterPage extends StatelessWidget {
               icon: Icons.phone,
               title: "Telepon",
               subtitle: "Hubungi kami langsung",
-              value: "+62 21-1234-5678",
+              value: "+6282138894119",
               color: Colors.blue,
             ),
             const SizedBox(height: 12),
@@ -111,7 +111,7 @@ class HelpCenterPage extends StatelessWidget {
               icon: Icons.email,
               title: "Email",
               subtitle: "Kirim email untuk pertanyaan detail",
-              value: "support@temulapak.com",
+              value: "axelg.bsns@gmail.com",
               color: MyColor.red,
             ),
             const SizedBox(height: 30),
@@ -148,35 +148,6 @@ class HelpCenterPage extends StatelessWidget {
                   _buildOperatingHourRow("Minggu", "10:00 - 20:00 WIB"),
                 ],
               ),
-            ),
-            const SizedBox(height: 30),
-            Text(
-              "Aksi Cepat",
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-                color: MyColor.blackPlain,
-              ),
-            ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: _buildQuickActionCard(
-                    context: context,
-                    icon: Icons.bug_report,
-                    title: "Laporkan Bug",
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _buildQuickActionCard(
-                    context: context,
-                    icon: Icons.feedback,
-                    title: "Berikan Feedback",
-                  ),
-                ),
-              ],
             ),
             const SizedBox(height: 30),
             Container(
@@ -314,63 +285,6 @@ class HelpCenterPage extends StatelessWidget {
                       ),
                     ),
                   ],
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildQuickActionCard({
-    required BuildContext context,
-    required IconData icon,
-    required String title,
-  }) {
-    return Container(
-      decoration: BoxDecoration(
-        color: MyColor.lightGrey,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(12),
-          onTap: () {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                    '$title: Silakan hubungi support melalui kontak di atas'),
-                backgroundColor: Colors.blue,
-              ),
-            );
-          },
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: MyColor.orange.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Icon(
-                    icon,
-                    color: MyColor.orange,
-                    size: 24,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  title,
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: MyColor.blackPlain,
-                  ),
-                  textAlign: TextAlign.center,
                 ),
               ],
             ),
