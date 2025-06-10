@@ -26,7 +26,7 @@ final locationServicesDetailProvider =
 // ignore: unused_element
 typedef LocationServicesDetailRef = AutoDisposeProviderRef<LocationService>;
 String _$merchantLiveStreamHash() =>
-    r'54eb3e38cc8a0b5e022faf19c1192a0ff5276808';
+    r'd9f1bcc1dbeeb15a5a89ce542140c1c7c9bea54f';
 
 /// Copied from Dart SDK
 class _SystemHash {
@@ -180,8 +180,26 @@ class _MerchantLiveStreamProviderElement
   String get merchantId => (origin as MerchantLiveStreamProvider).merchantId;
 }
 
+String _$enhancedMerchantDetailStateNotifierHash() =>
+    r'33c67aa71956c9dd6c2a0a4b03e36aa9e71139a0';
+
+/// See also [EnhancedMerchantDetailStateNotifier].
+@ProviderFor(EnhancedMerchantDetailStateNotifier)
+final enhancedMerchantDetailStateNotifierProvider = AutoDisposeNotifierProvider<
+    EnhancedMerchantDetailStateNotifier, EnhancedMerchantDetailState>.internal(
+  EnhancedMerchantDetailStateNotifier.new,
+  name: r'enhancedMerchantDetailStateNotifierProvider',
+  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+      ? null
+      : _$enhancedMerchantDetailStateNotifierHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
+
+typedef _$EnhancedMerchantDetailStateNotifier
+    = AutoDisposeNotifier<EnhancedMerchantDetailState>;
 String _$merchantDetailViewModelHash() =>
-    r'e7836b16d9de4fd492075693a8083cc8b4ab394d';
+    r'4cc7da8d35f2921d5afd79c331759e860921d833';
 
 /// See also [MerchantDetailViewModel].
 @ProviderFor(MerchantDetailViewModel)

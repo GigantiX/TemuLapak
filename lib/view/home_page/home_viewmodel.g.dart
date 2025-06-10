@@ -92,7 +92,24 @@ final geoMerchantServiceProvider =
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef GeoMerchantServiceRef = AutoDisposeProviderRef<GeoMerchantService>;
-String _$homeViewmodelHash() => r'7b2f50f1038bb192faf8115282936d4dcc9ae8dc';
+String _$enhancedHomeStateNotifierHash() =>
+    r'dd758ba5f3f3b5c6bfa613a36761af887c2f7565';
+
+/// See also [EnhancedHomeStateNotifier].
+@ProviderFor(EnhancedHomeStateNotifier)
+final enhancedHomeStateNotifierProvider = AutoDisposeNotifierProvider<
+    EnhancedHomeStateNotifier, EnhancedHomeState>.internal(
+  EnhancedHomeStateNotifier.new,
+  name: r'enhancedHomeStateNotifierProvider',
+  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+      ? null
+      : _$enhancedHomeStateNotifierHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
+
+typedef _$EnhancedHomeStateNotifier = AutoDisposeNotifier<EnhancedHomeState>;
+String _$homeViewmodelHash() => r'30a56e72cea3f44e07777e44994cab91ba597f74';
 
 /// See also [HomeViewmodel].
 @ProviderFor(HomeViewmodel)
@@ -108,7 +125,7 @@ final homeViewmodelProvider = AutoDisposeNotifierProvider<HomeViewmodel,
 );
 
 typedef _$HomeViewmodel = AutoDisposeNotifier<AppState<UserModel, Exception>>;
-String _$addressViewModelHash() => r'dad7ff3311d58c9fc65971660002979a5a70d0d9';
+String _$addressViewModelHash() => r'a78f6cf8d68c17e89a3276341da49fb13db00c01';
 
 /// See also [AddressViewModel].
 @ProviderFor(AddressViewModel)
@@ -125,7 +142,7 @@ final addressViewModelProvider = AutoDisposeNotifierProvider<AddressViewModel,
 
 typedef _$AddressViewModel = AutoDisposeNotifier<AppState<String, Exception>>;
 String _$recommendedMerchantsHash() =>
-    r'1a193c7ac3855e4f347ba3cf80f6fcd66f6e472c';
+    r'3e8d1a4622eddff44e7ae8a45afbcd60b198f1ed';
 
 /// See also [RecommendedMerchants].
 @ProviderFor(RecommendedMerchants)

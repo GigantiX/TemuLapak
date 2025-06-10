@@ -1,17 +1,11 @@
-// File: lib/view/favorite_page/favorite_page.dart
-// PROPER IMPLEMENTATION: Using ViewModel and real-time stream
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:temulapak_app/assets/mycolor.dart';
-import 'package:temulapak_app/data/network/merchant_service.dart';
 import 'package:temulapak_app/model/favorite/favorite_model.dart';
 import 'package:temulapak_app/model/merchant/merchant_model.dart';
 import 'package:temulapak_app/utils/logger.dart';
 import 'package:temulapak_app/view/favorite_page/favorite_viewmodel.dart';
-import 'package:temulapak_app/view/favorite_page/favorite_status_viewmodel.dart';
-import 'package:temulapak_app/view/merchant_detail_page/merchant_detail_page.dart';
 import 'package:temulapak_app/view/widget/merchant_widget.dart';
 
 class FavoritePage extends ConsumerStatefulWidget {
@@ -22,21 +16,17 @@ class FavoritePage extends ConsumerStatefulWidget {
 }
 
 class _FavoritePageState extends ConsumerState<FavoritePage> {
-  final MerchantService _merchantService = MerchantService();
-  
   @override
   void initState() {
     super.initState();
     
-    // Initialize favorites loading
-    Future.microtask(() {
-      ref.read(favoriteViewModelProvider.notifier).loadFavorites();
+    Future.microtask(() async {
+      await ref.read(favoriteViewModelProvider.notifier).initialize();
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    // Watch the real-time favorites stream
     final favoritesStream = ref.watch(favoritesStreamProvider);
 
     return Scaffold(
@@ -45,23 +35,13 @@ class _FavoritePageState extends ConsumerState<FavoritePage> {
         title: Text(
           'Favorit',
           style: TextStyle(
-            color: MyColor.blackPlain,
+            color: MyColor.white,
             fontWeight: FontWeight.w600,
           ),
         ),
-        backgroundColor: Colors.white,
+        backgroundColor: MyColor.orange,
         elevation: 0.5,
         automaticallyImplyLeading: false,
-        actions: [
-          // Refresh button only
-          IconButton(
-            icon: Icon(Icons.refresh, color: MyColor.blackPlain),
-            onPressed: () {
-              Logger.log("FAVORITE_PAGE - Manual refresh triggered");
-              ref.read(favoriteViewModelProvider.notifier).refreshFavorites();
-            },
-          ),
-        ],
       ),
       body: RefreshIndicator(
         onRefresh: () async {
@@ -88,40 +68,10 @@ class _FavoritePageState extends ConsumerState<FavoritePage> {
 
     return Column(
       children: [
-        // Info Bar
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-          color: MyColor.lightGrey,
-          child: Row(
-            children: [
-              Icon(Icons.favorite, color: MyColor.orange, size: 20),
-              const SizedBox(width: 8),
-              Text(
-                "${favorites.length} merchant favorit",
-                style: TextStyle(
-                  fontSize: 14,
-                  color: MyColor.blackPlain,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              const Spacer(),
-              Text(
-                "Geser kiri untuk hapus",
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey[600],
-                  fontStyle: FontStyle.italic,
-                ),
-              ),
-            ],
-          ),
-        ),
-        
-        // Favorites List
+        _buildInfoBar(favorites.length),
         Expanded(
           child: FutureBuilder<List<MerchantModel>>(
-            future: _loadMerchantDetails(favorites),
+            future: ref.read(favoriteViewModelProvider.notifier).loadMerchantDetails(favorites),
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
                 return _buildMerchantLoadingState();
@@ -141,140 +91,100 @@ class _FavoritePageState extends ConsumerState<FavoritePage> {
     );
   }
 
-  Widget _buildMerchantsList(List<MerchantModel> merchants, List<FavoriteModel> favorites) {
-    return ListView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-      itemCount: merchants.length,
-      itemBuilder: (context, index) {
-        final merchant = merchants[index];
-        final favorite = favorites.firstWhere(
-          (fav) => fav.merchantId == "MRCN_${merchant.uid}",
-          orElse: () => favorites[index], // Fallback
-        );
-        
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 8),
-          child: FavoriteMerchantWidget(
-            merchant: merchant,
-            onTap: () {
-              Logger.log("FAVORITE_PAGE - Opening merchant detail: ${merchant.merchantName}");
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => MerchantDetailPage(merchant: merchant),
-                ),
-              );
-            },
-            onRemoveFavorite: () => _removeFavorite(favorite.merchantId, merchant.merchantName ?? 'Merchant'),
-            distance: null, // Could be calculated if needed
+  Widget _buildInfoBar(int favoritesCount) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+      color: MyColor.lightGrey,
+      child: Row(
+        children: [
+          Icon(Icons.favorite, color: MyColor.orange, size: 20),
+          const SizedBox(width: 8),
+          Text(
+            "$favoritesCount pedagang favorit",
+            style: TextStyle(
+              fontSize: 14,
+              color: MyColor.blackPlain,
+              fontWeight: FontWeight.w500,
+            ),
           ),
+          const Spacer(),
+          Consumer(
+            builder: (context, ref, child) {
+              final locationState = ref.watch(locationStateProvider);
+              final hasLocation = locationState != null;
+              
+              if (!hasLocation) {
+                return Row(
+                  children: [
+                    Icon(Icons.location_off, size: 14, color: Colors.grey[500]),
+                    const SizedBox(width: 4),
+                    Text(
+                      "Lokasi tidak tersedia",
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Colors.grey[500],
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                  ],
+                );
+              } else {
+                return Text(
+                  "Geser kiri untuk hapus",
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey[600],
+                    fontStyle: FontStyle.italic,
+                  ),
+                );
+              }
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMerchantsList(List<MerchantModel> merchants, List<FavoriteModel> favorites) {
+    return Consumer(
+      builder: (context, ref, child) {
+        ref.watch(locationStateProvider);
+        final viewModel = ref.read(favoriteViewModelProvider.notifier);
+        return ListView.builder(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+          itemCount: merchants.length,
+          itemBuilder: (context, index) {
+            final merchant = merchants[index];
+            final favorite = favorites.firstWhere(
+              (fav) => fav.merchantId == "MRCN_${merchant.uid}",
+              orElse: () => favorites[index],
+            );
+            final distance = viewModel.calculateDistance(merchant);
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: FavoriteMerchantWidget(
+                merchant: merchant,
+                onTap: () {
+                  Logger.log("FAVORITE_PAGE - Clicked on merchant: ${merchant.merchantName}");
+                  viewModel.navigateToMerchantDetail(context, merchant);
+                },
+                onRemoveFavorite: () {
+                  Logger.log("FAVORITE_PAGE - Swipe to remove favorite: ${merchant.merchantName}");
+                  viewModel.removeFavoriteComplete(context, favorite.merchantId, merchant.merchantName ?? 'Merchant');
+                },
+                distance: distance,
+              ),
+            );
+          },
         );
       },
     );
   }
 
-  Future<List<MerchantModel>> _loadMerchantDetails(List<FavoriteModel> favorites) async {
-    try {
-      Logger.log("FAVORITE_PAGE - Loading merchant details for ${favorites.length} favorites");
-      
-      if (favorites.isEmpty) return [];
-      
-      // Get all merchants
-      final allMerchants = await _merchantService.getAllMerchants();
-      
-      // Filter merchants that match favorites
-      final List<MerchantModel> favoriteMerchants = [];
-      
-      for (final favorite in favorites) {
-        final merchant = allMerchants.firstWhere(
-          (m) => "MRCN_${m.uid}" == favorite.merchantId,
-          orElse: () => _createPlaceholderMerchant(favorite),
-        );
-        favoriteMerchants.add(merchant);
-      }
-      
-      Logger.log("FAVORITE_PAGE - Successfully loaded ${favoriteMerchants.length} merchant details");
-      return favoriteMerchants;
-      
-    } catch (e) {
-      Logger.error("FAVORITE_PAGE - Error loading merchant details", error: e);
-      rethrow;
-    }
-  }
-
-  MerchantModel _createPlaceholderMerchant(FavoriteModel favorite) {
-    // Create placeholder merchant for favorites that might not exist anymore
-    return MerchantModel(
-      uid: favorite.merchantId.replaceFirst("MRCN_", ""),
-      merchantName: favorite.merchantName ?? "Merchant Tidak Ditemukan",
-      merchantStatus: false,
-      merchantImgUrl: favorite.merchantImgUrl,
-      merchantCategory: favorite.merchantCategory,
-    );
-  }
-
-  Future<void> _removeFavorite(String merchantId, String merchantName) async {
-    try {
-      Logger.log("FAVORITE_PAGE - Removing favorite: $merchantId");
-      
-      // Show loading feedback
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              SizedBox(
-                width: 16,
-                height: 16,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Text("Menghapus $merchantName..."),
-            ],
-          ),
-          backgroundColor: MyColor.orange,
-          duration: Duration(seconds: 1),
-        ),
-      );
-      
-      // Remove from favorites
-      await ref.read(favoriteHelperProvider.notifier)
-          .quickRemoveFromFavorites(merchantId, merchantName);
-      
-      // Show success feedback
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text("✅ $merchantName dihapus dari favorit"),
-            backgroundColor: Colors.green,
-            duration: Duration(seconds: 2),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      }
-      
-    } catch (e) {
-      Logger.error("FAVORITE_PAGE - Error removing favorite", error: e);
-      
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text("❌ Gagal menghapus dari favorit"),
-            backgroundColor: MyColor.red,
-            duration: Duration(seconds: 2),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      }
-    }
-  }
-
   Widget _buildLoadingState() {
     return Column(
       children: [
-        // Info Bar Shimmer
         Container(
           width: double.infinity,
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
@@ -297,7 +207,6 @@ class _FavoritePageState extends ConsumerState<FavoritePage> {
           ),
         ),
         
-        // List Shimmer
         Expanded(
           child: ListView.builder(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
@@ -348,7 +257,6 @@ class _FavoritePageState extends ConsumerState<FavoritePage> {
       physics: AlwaysScrollableScrollPhysics(),
       child: Column(
         children: [
-          // Empty Info Bar
           Container(
             width: double.infinity,
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
@@ -369,7 +277,6 @@ class _FavoritePageState extends ConsumerState<FavoritePage> {
             ),
           ),
           
-          // Empty Content
           SizedBox(
             height: MediaQuery.of(context).size.height * 0.6,
             child: Column(
@@ -400,31 +307,13 @@ class _FavoritePageState extends ConsumerState<FavoritePage> {
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 48),
                   child: Text(
-                    "Tambahkan merchant favorit dengan\nmenekan tombol ❤️ di halaman detail merchant",
+                    "Tambahkan merchant favorit dengan\nmenekan ikon ❤️ di halaman detail merchant",
                     style: TextStyle(
                       fontSize: 16,
                       color: Colors.grey[600],
                       height: 1.6,
                     ),
                     textAlign: TextAlign.center,
-                  ),
-                ),
-                const SizedBox(height: 32),
-                ElevatedButton.icon(
-                  onPressed: () {
-                    // Navigate back to home to find merchants
-                    Navigator.of(context).popUntil((route) => route.isFirst);
-                  },
-                  icon: Icon(Icons.explore),
-                  label: Text("Jelajahi Merchant"),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: MyColor.orange,
-                    foregroundColor: Colors.white,
-                    padding: EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    elevation: 2,
                   ),
                 ),
               ],
@@ -495,6 +384,7 @@ class _FavoritePageState extends ConsumerState<FavoritePage> {
             const SizedBox(height: 32),
             ElevatedButton.icon(
               onPressed: () {
+                Logger.log("FAVORITE_PAGE - Retry button clicked");
                 ref.read(favoriteViewModelProvider.notifier).refreshFavorites();
               },
               icon: Icon(Icons.refresh),
@@ -548,7 +438,8 @@ class _FavoritePageState extends ConsumerState<FavoritePage> {
             const SizedBox(height: 16),
             ElevatedButton.icon(
               onPressed: () {
-                setState(() {}); // Trigger rebuild to retry loading
+                Logger.log("FAVORITE_PAGE - Merchant error retry button clicked");
+                setState(() {});
               },
               icon: Icon(Icons.refresh),
               label: Text("Coba Lagi"),

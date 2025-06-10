@@ -62,7 +62,7 @@ final geoMerchantServiceProvider =
 // ignore: unused_element
 typedef GeoMerchantServiceRef = AutoDisposeProviderRef<GeoMerchantService>;
 String _$listMerchantViewModelHash() =>
-    r'cfde07a92e9e1d4790d090c0a827d9d348652ff8';
+    r'938a50170e4e0c9ea25ffc9bd4896f3d32007fe6';
 
 /// See also [ListMerchantViewModel].
 @ProviderFor(ListMerchantViewModel)
