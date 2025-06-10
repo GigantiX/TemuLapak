@@ -4,8 +4,7 @@ import 'package:shimmer/shimmer.dart';
 import 'package:temulapak_app/assets/mycolor.dart';
 import 'package:temulapak_app/model/chat/conversation_model.dart';
 import 'package:temulapak_app/utils/logger.dart';
-import 'package:temulapak_app/utils/date_formatter.dart'; // Use our safe date formatter
-import 'package:temulapak_app/view/chat_page/chat_detail_page.dart';
+import 'package:temulapak_app/utils/date_formatter.dart';
 import 'package:temulapak_app/view/chat_page/chat_viewmodel.dart';
 
 class ChatPage extends ConsumerStatefulWidget {
@@ -15,13 +14,14 @@ class ChatPage extends ConsumerStatefulWidget {
   ConsumerState<ChatPage> createState() => _ChatPageState();
 }
 
-class _ChatPageState extends ConsumerState<ChatPage> with SingleTickerProviderStateMixin {
+class _ChatPageState extends ConsumerState<ChatPage>
+    with SingleTickerProviderStateMixin {
   TabController? _tabController;
-  
+
   @override
   void initState() {
     super.initState();
-    
+
     // Initialize chat lists
     Future.microtask(() {
       ref.read(chatListViewModelProvider.notifier).loadChatLists();
@@ -52,12 +52,10 @@ class _ChatPageState extends ConsumerState<ChatPage> with SingleTickerProviderSt
     final merchantId = data['merchantId'] as String;
 
     // Initialize tab controller based on merchant status
-    if (_tabController == null) {
-      _tabController = TabController(
-        length: isMerchant ? 2 : 1,
-        vsync: this,
-      );
-    }
+    _tabController ??= TabController(
+      length: isMerchant ? 2 : 1,
+      vsync: this,
+    );
 
     if (isMerchant) {
       return DefaultTabController(
@@ -249,7 +247,9 @@ class _ChatPageState extends ConsumerState<ChatPage> with SingleTickerProviderSt
               SizedBox(height: 24),
               ElevatedButton.icon(
                 onPressed: () {
-                  ref.read(chatListViewModelProvider.notifier).refreshChatLists();
+                  ref
+                      .read(chatListViewModelProvider.notifier)
+                      .refreshChatLists();
                 },
                 icon: Icon(Icons.refresh),
                 label: Text('Coba Lagi'),
@@ -280,31 +280,34 @@ class UserChatListView extends ConsumerWidget {
 
     return conversationsStream.when(
       data: (conversations) {
-        Logger.log("USER_CHAT_LIST - Successfully loaded ${conversations.length} conversations");
+        Logger.log(
+            "USER_CHAT_LIST - Successfully loaded ${conversations.length} conversations");
         if (conversations.isEmpty) {
           return _buildEmptyUserState();
         }
-        return _buildConversationsList(conversations, isFromMerchant: false);
+        return _buildConversationsList(ref, conversations,
+            isFromMerchant: false);
       },
       loading: () {
         Logger.log("USER_CHAT_LIST - Loading conversations for user: $userId");
         return _buildLoadingList();
       },
       error: (error, stack) {
-        Logger.error("USER_CHAT_LIST - Stream error for user $userId", error: error);
+        Logger.error("USER_CHAT_LIST - Stream error for user $userId",
+            error: error);
         Logger.error("USER_CHAT_LIST - Stack trace", error: stack);
-        
+
         // Check if it's a Firebase index error
         if (error.toString().contains('requires an index')) {
           return _buildIndexErrorState(ref);
         }
-        
-        return _buildErrorList("Gagal memuat chat sebagai pembeli: ${error.toString()}");
+
+        return _buildErrorList(
+            "Gagal memuat chat sebagai pembeli: ${error.toString()}");
       },
     );
   }
 
-  // FIXED: Pass WidgetRef as parameter
   Widget _buildIndexErrorState(WidgetRef ref) {
     return Center(
       child: Padding(
@@ -399,7 +402,9 @@ class UserChatListView extends ConsumerWidget {
     );
   }
 
-  Widget _buildConversationsList(List<ConversationModel> conversations, {required bool isFromMerchant}) {
+  Widget _buildConversationsList(
+      WidgetRef ref, List<ConversationModel> conversations,
+      {required bool isFromMerchant}) {
     return ListView.builder(
       padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       itemCount: conversations.length,
@@ -410,14 +415,9 @@ class UserChatListView extends ConsumerWidget {
           isFromMerchant: isFromMerchant,
           onTap: () {
             Logger.log("Opening chat detail: ${conversation.id}");
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => ChatDetailPage(
-                  conversationId: conversation.id,
-                ),
-              ),
-            );
+            ref
+                .read(chatActionsViewModelProvider.notifier)
+                .navigateToChatDetail(conversation.id, context);
           },
         );
       },
@@ -494,35 +494,41 @@ class MerchantChatListView extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final conversationsStream = ref.watch(merchantConversationsProvider(merchantId));
+    final conversationsStream =
+        ref.watch(merchantConversationsProvider(merchantId));
 
     return conversationsStream.when(
       data: (conversations) {
-        Logger.log("MERCHANT_CHAT_LIST - Successfully loaded ${conversations.length} conversations");
+        Logger.log(
+            "MERCHANT_CHAT_LIST - Successfully loaded ${conversations.length} conversations");
         if (conversations.isEmpty) {
           return _buildEmptyMerchantState();
         }
-        return _buildConversationsList(conversations, isFromMerchant: true);
+        return _buildConversationsList(ref, conversations,
+            isFromMerchant: true);
       },
       loading: () {
-        Logger.log("MERCHANT_CHAT_LIST - Loading conversations for merchant: $merchantId");
+        Logger.log(
+            "MERCHANT_CHAT_LIST - Loading conversations for merchant: $merchantId");
         return _buildLoadingList();
       },
       error: (error, stack) {
-        Logger.error("MERCHANT_CHAT_LIST - Stream error for merchant $merchantId", error: error);
+        Logger.error(
+            "MERCHANT_CHAT_LIST - Stream error for merchant $merchantId",
+            error: error);
         Logger.error("MERCHANT_CHAT_LIST - Stack trace", error: stack);
-        
+
         // Check if it's a Firebase index error
         if (error.toString().contains('requires an index')) {
           return _buildMerchantIndexErrorState(ref);
         }
-        
-        return _buildErrorList("Gagal memuat chat sebagai penjual: ${error.toString()}");
+
+        return _buildErrorList(
+            "Gagal memuat chat sebagai penjual: ${error.toString()}");
       },
     );
   }
 
-  // FIXED: Add index error state for merchant view
   Widget _buildMerchantIndexErrorState(WidgetRef ref) {
     return Center(
       child: Padding(
@@ -617,7 +623,9 @@ class MerchantChatListView extends ConsumerWidget {
     );
   }
 
-  Widget _buildConversationsList(List<ConversationModel> conversations, {required bool isFromMerchant}) {
+  Widget _buildConversationsList(
+      WidgetRef ref, List<ConversationModel> conversations,
+      {required bool isFromMerchant}) {
     return ListView.builder(
       padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       itemCount: conversations.length,
@@ -628,14 +636,9 @@ class MerchantChatListView extends ConsumerWidget {
           isFromMerchant: isFromMerchant,
           onTap: () {
             Logger.log("Opening merchant chat detail: ${conversation.id}");
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => ChatDetailPage(
-                  conversationId: conversation.id,
-                ),
-              ),
-            );
+            ref
+                .read(chatActionsViewModelProvider.notifier)
+                .navigateToChatDetail(conversation.id, context);
           },
         );
       },
@@ -702,7 +705,7 @@ class MerchantChatListView extends ConsumerWidget {
 
 // === CHAT LIST TILE WIDGET ===
 
-class ChatListTile extends StatelessWidget {
+class ChatListTile extends ConsumerWidget {
   final ConversationModel conversation;
   final bool isFromMerchant;
   final VoidCallback onTap;
@@ -715,9 +718,12 @@ class ChatListTile extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
-    final otherParticipant = _getOtherParticipant();
-    final currentUserId = _getCurrentUserId();
+  Widget build(BuildContext context, WidgetRef ref) {
+    final viewModel = ref.read(chatListViewModelProvider.notifier);
+    final otherParticipant =
+        viewModel.getOtherParticipant(conversation, isFromMerchant);
+    final currentUserId =
+        viewModel.getCurrentUserId(conversation, isFromMerchant);
     final unreadCount = conversation.unreadCount[currentUserId] ?? 0;
 
     return Container(
@@ -755,7 +761,7 @@ class ChatListTile extends StatelessWidget {
                       : null,
                 ),
                 SizedBox(width: 16),
-                
+
                 // Content
                 Expanded(
                   child: Column(
@@ -778,7 +784,8 @@ class ChatListTile extends StatelessWidget {
                           ),
                           Text(
                             // FIXED: Use safe date formatter utility
-                            DateFormatter.formatMessageTime(conversation.updatedAt),
+                            DateFormatter.formatMessageTime(
+                                conversation.updatedAt),
                             style: TextStyle(
                               fontSize: 12,
                               color: Colors.grey[500],
@@ -787,20 +794,21 @@ class ChatListTile extends StatelessWidget {
                         ],
                       ),
                       SizedBox(height: 4),
-                      
+
                       // Last message and unread badge
                       Row(
                         children: [
                           Expanded(
                             child: Text(
-                              conversation.lastMessage?.text ?? 'Tidak ada pesan',
+                              conversation.lastMessage?.text ??
+                                  'Tidak ada pesan',
                               style: TextStyle(
                                 fontSize: 14,
-                                color: unreadCount > 0 
-                                    ? MyColor.blackPlain 
+                                color: unreadCount > 0
+                                    ? MyColor.blackPlain
                                     : Colors.grey[600],
-                                fontWeight: unreadCount > 0 
-                                    ? FontWeight.w500 
+                                fontWeight: unreadCount > 0
+                                    ? FontWeight.w500
                                     : FontWeight.normal,
                               ),
                               maxLines: 1,
@@ -819,7 +827,9 @@ class ChatListTile extends StatelessWidget {
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: Text(
-                                unreadCount > 99 ? '99+' : unreadCount.toString(),
+                                unreadCount > 99
+                                    ? '99+'
+                                    : unreadCount.toString(),
                                 style: TextStyle(
                                   color: Colors.white,
                                   fontSize: 12,
@@ -839,36 +849,5 @@ class ChatListTile extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  ParticipantDetail? _getOtherParticipant() {
-    final currentUserId = _getCurrentUserId();
-    final otherParticipantId = conversation.participants.firstWhere(
-      (id) => id != currentUserId,
-      orElse: () => '',
-    );
-    
-    if (otherParticipantId.isNotEmpty) {
-      return conversation.participantDetails[otherParticipantId];
-    }
-    return null;
-  }
-
-  String _getCurrentUserId() {
-    // This would typically come from a provider/service
-    // For now, we'll determine based on the merchant flag and conversation participants
-    if (isFromMerchant) {
-      // Find the merchant ID (starts with MRCN_)
-      return conversation.participants.firstWhere(
-        (id) => id.startsWith('MRCN_'),
-        orElse: () => conversation.participants.first,
-      );
-    } else {
-      // Find the user ID (doesn't start with MRCN_)
-      return conversation.participants.firstWhere(
-        (id) => !id.startsWith('MRCN_'),
-        orElse: () => conversation.participants.first,
-      );
-    }
   }
 }

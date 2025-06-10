@@ -1,9 +1,11 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:temulapak_app/data/network/notification_service.dart';
 import 'package:temulapak_app/model/notification/notification_model.dart';
 import 'package:temulapak_app/model/state/app_state.dart';
 import 'package:temulapak_app/utils/logger.dart';
+import 'package:temulapak_app/view/chat_page/chat_detail_page.dart';
 
 part 'notification_viewmodel.g.dart';
 
@@ -64,21 +66,23 @@ class NotificationActionsViewModel extends _$NotificationActionsViewModel {
     }
   }
 
-  /// Clear FCM token on logout
-  Future<void> clearTokenOnLogout() async {
-    try {
-      Logger.log("NOTIFICATION_ACTIONS_VM - Clearing FCM token on logout");
-      
-      final notificationService = ref.read(notificationServiceProvider);
-      await notificationService.clearFCMTokenOnLogout();
-      
-      Logger.log("NOTIFICATION_ACTIONS_VM - FCM token cleared successfully");
-      
-    } catch (e) {
-      Logger.error("NOTIFICATION_ACTIONS_VM - Error clearing FCM token", error: e);
-    }
+  void navigateToChatDetail(BuildContext context, String conversationId) {
+    Logger.log("NOTIFICATION_ACTIONS_VM - Navigating to chat detail: $conversationId");
+    
+    Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => ChatDetailPage(
+                  conversationId: conversationId,
+                ),
+              ),
+            );
   }
 
+  void navigateToHomePage(BuildContext context) {
+    Navigator.pop(context);
+  }
+  
   /// Clear state
   void clearState() {
     state = AppState.idle();
