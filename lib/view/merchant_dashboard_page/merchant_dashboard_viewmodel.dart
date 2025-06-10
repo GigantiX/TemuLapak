@@ -1,10 +1,12 @@
 import 'dart:async';
 
+import 'package:flutter/material.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:temulapak_app/data/network/merchant_service.dart';
 import 'package:temulapak_app/model/merchant/merchant_model.dart';
 import 'package:temulapak_app/model/state/app_state.dart';
 import 'package:temulapak_app/utils/logger.dart';
+import 'package:temulapak_app/view/edit_merchant_profile_page/edit_merchant_profile_page.dart';
 
 part 'merchant_dashboard_viewmodel.g.dart';
 
@@ -19,18 +21,34 @@ class MerchantDashboardViewmodel extends _$MerchantDashboardViewmodel {
       _refreshTimer?.cancel();
       _refreshTimer = null;
     });
-    
+
     return AppState.idle();
+  }
+
+  void navigateToEditMerchant(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => EditMerchantProfilePage(),
+      ),
+    ).then((_) {
+      // Refresh data when returning from edit page
+      ref.read(merchantDashboardViewmodelProvider.notifier).loadMerchantData();
+    });
+  }
+
+  void navigateBack(BuildContext context) {
+    Navigator.pop(context);
   }
 
   Future<void> loadMerchantData() async {
     try {
       state = AppState.loading();
       Logger.log("VM - Loading merchant data");
-      
+
       final merchantData = await _merchantService.getUserMerchant();
       Logger.log("VM - Merchant data loaded successfully");
-      
+
       state = AppState.success(merchantData);
     } catch (e) {
       state = AppState.error(e as Exception);
@@ -40,12 +58,13 @@ class MerchantDashboardViewmodel extends _$MerchantDashboardViewmodel {
   Future<void> updateMerchantStatus(bool isOpen) async {
     try {
       Logger.log("VM - Updating merchant status to: $isOpen");
-      
+
       await _merchantService.updateMerchantStatus(isOpen);
-      
+
       final currentState = state;
       if (currentState.isSuccess && currentState.data != null) {
-        final updatedMerchant = currentState.data!.copyWith(merchantStatus: isOpen);
+        final updatedMerchant =
+            currentState.data!.copyWith(merchantStatus: isOpen);
         state = AppState.success(updatedMerchant);
         Logger.log("VM - Merchant status updated successfully");
       }
@@ -58,9 +77,9 @@ class MerchantDashboardViewmodel extends _$MerchantDashboardViewmodel {
   Future<void> updateMerchantLocation(double lat, double lng) async {
     try {
       Logger.log("VM - Updating merchant location");
-      
+
       await _merchantService.updateMerchantLocation(lat, lng);
-      
+
       final currentState = state;
       if (currentState.isSuccess && currentState.data != null) {
         final updatedMerchant = currentState.data!.copyWith(
@@ -78,15 +97,15 @@ class MerchantDashboardViewmodel extends _$MerchantDashboardViewmodel {
 
   void startLiveTrackingRefresh() {
     Logger.log("VM - Starting live tracking refresh timer");
-    
+
     // Cancel existing timer if any
     _refreshTimer?.cancel();
-    
+
     // Refresh merchant data every 30 seconds when live tracking is active
     _refreshTimer = Timer.periodic(Duration(seconds: 30), (timer) async {
       try {
         Logger.log("VM - Refreshing merchant data for live tracking");
-        
+
         // Only refresh if current state is success (don't interfere with loading/error states)
         if (state.isSuccess) {
           final merchantData = await _merchantService.getUserMerchant();
@@ -109,10 +128,10 @@ class MerchantDashboardViewmodel extends _$MerchantDashboardViewmodel {
   Future<void> refreshMerchantData() async {
     try {
       Logger.log("VM - Force refreshing merchant data");
-      
+
       final merchantData = await _merchantService.getUserMerchant();
       state = AppState.success(merchantData);
-      
+
       Logger.log("VM - Force refresh completed successfully");
     } catch (e) {
       Logger.error("VM - Error in force refresh", error: e);

@@ -195,7 +195,7 @@ class ProfileViewModel extends StateNotifier<AppState<UserModel, Exception>> {
               context: context,
               customOfflineMessage: "Can't connect to the internet",
               action: () async {
-                await loginVM.signOut();
+                await signOut(context);
                 return true;
               },
             );

@@ -6,7 +6,7 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:geoflutterfire_plus/geoflutterfire_plus.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:temulapak_app/data/network/user_service.dart';
-import 'package:temulapak_app/data/network/geo_merchant_service.dart'; // NEW IMPORT
+import 'package:temulapak_app/data/network/geo_merchant_service.dart';
 import 'package:temulapak_app/model/merchant/merchant_model.dart';
 import 'package:temulapak_app/model/product/product_model.dart';
 import 'package:temulapak_app/utils/logger.dart';
@@ -522,8 +522,8 @@ class MerchantService {
     try {
       final uid = userService.getCurrentUID();
       if (uid == null) {
-        Logger.error("User not authenticated");
-        throw Exception("User not authenticated");
+        Logger.error("MRCNSRVC - User not authenticated. uid: $uid");
+        throw Exception("MRCNSRVC - User not authenticated");
       }
 
       final merchantId = "MRCN_$uid";

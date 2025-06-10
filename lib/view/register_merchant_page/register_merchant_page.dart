@@ -6,7 +6,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:temulapak_app/assets/mycolor.dart';
-import 'package:temulapak_app/model/merchant/merchant_model.dart';
 import 'package:temulapak_app/model/product/product_model.dart';
 import 'package:temulapak_app/model/state/app_state.dart';
 import 'package:temulapak_app/utils/loading/loading.dart';
@@ -125,8 +124,11 @@ class _RegisterMerchantPageState extends ConsumerState<RegisterMerchantPage> {
             duration: Duration(seconds: 2),
           ));
 
-          Future.delayed(Duration(seconds: 2), () {
-            if (mounted) Navigator.of(context).pop();
+          Future.delayed(Duration(seconds: 1), () {
+            if (mounted) {
+              ref.read(registerMerchantViewModelProvider.notifier)
+                  .navigateToProfile(context);
+            }
           });
         }
       },
@@ -140,6 +142,7 @@ class _RegisterMerchantPageState extends ConsumerState<RegisterMerchantPage> {
                 "Gagal mendaftar sebagai penjual. Silakan coba lagi."),
             backgroundColor: Colors.red,
             duration: Duration(seconds: 3),
+            behavior: SnackBarBehavior.floating,
           ));
         }
       },
@@ -156,6 +159,95 @@ class _RegisterMerchantPageState extends ConsumerState<RegisterMerchantPage> {
     });
   }
 
+  Widget _buildRegisterButton(bool isTablet) {
+    return Container(
+      width: double.infinity,
+      height: isTablet ? 60 : 56,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [MyColor.orange, MyColor.orange.withValues(alpha: 0.8)],
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: MyColor.orange.withValues(alpha: 0.3),
+            blurRadius: 20,
+            offset: Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () async {
+            Logger.log("Register Merchant Button Pressed");
+
+            if (_formKey.currentState!.validate()) {
+              // --- View's only job is to collect raw data ---
+              final imageState = ref.read(pickImageViewModelProvider);
+              final File? imageFile = imageState.maybeWhen(
+                success: (file) => file,
+                orElse: () => null,
+              );
+
+              // --- Delegate all logic to the ViewModel ---
+              await ref
+                  .read(registerMerchantViewModelProvider.notifier)
+                  .registerMerchant(
+                    name: _nameController.text,
+                    description: _descController.text,
+                    categories: _selectedCategories,
+                    productFields: _productFields,
+                    location: _selectedLocation,
+                    imageFile: imageFile != null ? XFile(imageFile.path) : null,
+                  );
+            } else {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Row(
+                    children: [
+                      Icon(Icons.error_outline, color: Colors.white),
+                      SizedBox(width: 8),
+                      Text("Mohon lengkapi semua data yang diperlukan"),
+                    ],
+                  ),
+                  backgroundColor: Colors.red,
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
+            }
+          },
+          borderRadius: BorderRadius.circular(16),
+          child: Center(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.storefront,
+                  color: Colors.white,
+                  size: isTablet ? 24 : 20,
+                ),
+                SizedBox(width: 12),
+                Text(
+                  'Daftar Sebagai Penjual',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: isTablet ? 18 : 16,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // --- Other build methods remain the same ---
+  // (No changes needed for the rest of the file)
   @override
   Widget build(BuildContext context) {
     final imageState = ref.watch(pickImageViewModelProvider);
@@ -234,7 +326,8 @@ class _RegisterMerchantPageState extends ConsumerState<RegisterMerchantPage> {
                             child: _buildTextField(
                               controller: _descController,
                               label: "Deskripsi Toko / Dagangan",
-                              hint: "Ceritakan tentang toko dan produk Anda...",
+                              hint:
+                                  "Ceritakan tentang toko dan produk Anda...",
                               icon: Icons.edit_note,
                               maxLines: 4,
                               validator: (value) {
@@ -261,7 +354,8 @@ class _RegisterMerchantPageState extends ConsumerState<RegisterMerchantPage> {
                           // Location Section
                           _buildSectionCard(
                             title: "Lokasi Toko",
-                            subtitle: "Tentukan lokasi awal untuk memulai berjualan",
+                            subtitle:
+                                "Tentukan lokasi awal untuk memulai berjualan",
                             icon: Icons.location_on_outlined,
                             child: _buildLocationPicker(isTablet),
                           ),
@@ -488,9 +582,10 @@ class _RegisterMerchantPageState extends ConsumerState<RegisterMerchantPage> {
     );
   }
 
-  Widget _buildImageSection(AppState<File?, Exception> imageState, bool isTablet) {
+  Widget _buildImageSection(
+      AppState<File?, Exception> imageState, bool isTablet) {
     final aspectRatio = isTablet ? 2.5 : 16 / 9;
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -814,7 +909,8 @@ class _RegisterMerchantPageState extends ConsumerState<RegisterMerchantPage> {
             child: InkWell(
               onTap: () async {
                 Logger.log("Maps button pressed");
-                final locationState = ref.read(locationPickerViewModelProvider);
+                final locationState =
+                    ref.read(locationPickerViewModelProvider);
                 final initialLocation = locationState.maybeWhen(
                   success: (location) => location,
                   orElse: () => null,
@@ -925,7 +1021,7 @@ class _RegisterMerchantPageState extends ConsumerState<RegisterMerchantPage> {
         ..._productFields.asMap().entries.map((entry) {
           final index = entry.key;
           final product = entry.value;
-          
+
           return Container(
             margin: EdgeInsets.only(bottom: 20),
             padding: EdgeInsets.all(20),
@@ -1004,7 +1100,9 @@ class _RegisterMerchantPageState extends ConsumerState<RegisterMerchantPage> {
                       hint: "15000",
                       icon: Icons.attach_money,
                       keyboardType: TextInputType.number,
-                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                      inputFormatters: [
+                        FilteringTextInputFormatter.digitsOnly
+                      ],
                       prefix: "Rp ",
                       validator: (value) {
                         if (value == null || value.isEmpty) {
@@ -1019,7 +1117,7 @@ class _RegisterMerchantPageState extends ConsumerState<RegisterMerchantPage> {
             ),
           );
         }).toList(),
-        
+
         // Add Product Button
         Container(
           width: double.infinity,
@@ -1136,177 +1234,12 @@ class _RegisterMerchantPageState extends ConsumerState<RegisterMerchantPage> {
             ),
             filled: true,
             fillColor: Colors.white,
-            contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            contentPadding:
+                EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             errorStyle: TextStyle(fontSize: 11),
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildRegisterButton(bool isTablet) {
-    return Container(
-      width: double.infinity,
-      height: isTablet ? 60 : 56,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [MyColor.orange, MyColor.orange.withValues(alpha: 0.8)],
-          begin: Alignment.centerLeft,
-          end: Alignment.centerRight,
-        ),
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: MyColor.orange.withValues(alpha: 0.3),
-            blurRadius: 20,
-            offset: Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () async {
-            Logger.log("Register Merchant Button Pressed");
-            
-            if (_formKey.currentState!.validate()) {
-              final imageState = ref.read(pickImageViewModelProvider);
-              final File? imageFile = imageState.maybeWhen(
-                success: (file) => file,
-                orElse: () => null,
-              );
-
-              if (imageFile == null) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Row(
-                      children: [
-                        Icon(Icons.warning, color: Colors.white),
-                        SizedBox(width: 8),
-                        Text("Silakan pilih foto toko terlebih dahulu"),
-                      ],
-                    ),
-                    backgroundColor: Colors.orange,
-                    behavior: SnackBarBehavior.floating,
-                  ),
-                );
-                return;
-              }
-
-              if (_selectedCategories.isEmpty) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Row(
-                      children: [
-                        Icon(Icons.warning, color: Colors.white),
-                        SizedBox(width: 8),
-                        Text("Silakan pilih minimal satu kategori"),
-                      ],
-                    ),
-                    backgroundColor: Colors.orange,
-                    behavior: SnackBarBehavior.floating,
-                  ),
-                );
-                return;
-              }
-
-              if (_selectedLocation == null) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Row(
-                      children: [
-                        Icon(Icons.warning, color: Colors.white),
-                        SizedBox(width: 8),
-                        Text("Silakan pilih lokasi toko"),
-                      ],
-                    ),
-                    backgroundColor: Colors.orange,
-                    behavior: SnackBarBehavior.floating,
-                  ),
-                );
-                return;
-              }
-
-              try {
-                List<Product> products = [];
-                for (var field in _productFields) {
-                  products.add(Product(
-                    productName: field.nameController.text,
-                    productPrice: field.priceController.text,
-                  ));
-                }
-
-                final merchant = MerchantModel(
-                  uid: '',
-                  merchantStatus: true,
-                  merchantName: _nameController.text,
-                  merchantDesc: _descController.text,
-                  merchantLocLat: _selectedLocation!.latitude,
-                  merchantLocLong: _selectedLocation!.longitude,
-                  merchantImgUrl: null,
-                  merchantPopularity: 0,
-                  merchantCategory: _selectedCategories,
-                  products: products,
-                );
-
-                await ref
-                    .read(registerMerchantViewModelProvider.notifier)
-                    .registerMerchant(
-                      data: merchant,
-                      imageFile: XFile(imageFile.path),
-                    );
-              } catch (e) {
-                Logger.error("Error during merchant registration: $e");
-                Loading.hide();
-                if (!mounted) return;
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text("Terjadi kesalahan: ${e.toString()}"),
-                    backgroundColor: Colors.red,
-                    behavior: SnackBarBehavior.floating,
-                  ),
-                );
-              }
-            } else {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Row(
-                    children: [
-                      Icon(Icons.error_outline, color: Colors.white),
-                      SizedBox(width: 8),
-                      Text("Mohon lengkapi semua data yang diperlukan"),
-                    ],
-                  ),
-                  backgroundColor: Colors.red,
-                  behavior: SnackBarBehavior.floating,
-                ),
-              );
-            }
-          },
-          borderRadius: BorderRadius.circular(16),
-          child: Center(
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.storefront,
-                  color: Colors.white,
-                  size: isTablet ? 24 : 20,
-                ),
-                SizedBox(width: 12),
-                Text(
-                  'Daftar Sebagai Penjual',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: isTablet ? 18 : 16,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
     );
   }
 }

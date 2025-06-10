@@ -5,7 +5,6 @@ import 'package:temulapak_app/assets/mycolor.dart';
 import 'package:temulapak_app/model/notification/notification_model.dart';
 import 'package:temulapak_app/utils/date_formatter.dart';
 import 'package:temulapak_app/utils/logger.dart';
-import 'package:temulapak_app/view/chat_page/chat_detail_page.dart';
 import 'package:temulapak_app/view/notification_page/notification_viewmodel.dart';
 
 class NotificationPage extends ConsumerWidget {
@@ -30,16 +29,17 @@ class NotificationPage extends ConsumerWidget {
         elevation: 0.5,
         leading: IconButton(
           icon: Icon(Icons.arrow_back, color: MyColor.blackPlain),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () => ref.read(notificationActionsViewModelProvider.notifier).navigateToHomePage(context),
         ),
       ),
       body: notificationStream.when(
         data: (notifications) {
-          Logger.log("NOTIFICATION_PAGE - Loaded ${notifications.length} notifications");
+          Logger.log(
+              "NOTIFICATION_PAGE - Loaded ${notifications.length} notifications");
           if (notifications.isEmpty) {
             return _buildEmptyState();
           }
-          return _buildNotificationList(notifications);
+          return _buildNotificationList(notifications, ref);
         },
         loading: () {
           Logger.log("NOTIFICATION_PAGE - Loading notifications");
@@ -53,7 +53,8 @@ class NotificationPage extends ConsumerWidget {
     );
   }
 
-  Widget _buildNotificationList(List<NotificationModel> notifications) {
+  Widget _buildNotificationList(
+      List<NotificationModel> notifications, WidgetRef ref) {
     return ListView.builder(
       padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       itemCount: notifications.length,
@@ -62,15 +63,11 @@ class NotificationPage extends ConsumerWidget {
         return NotificationTile(
           notification: notification,
           onTap: () {
-            Logger.log("NOTIFICATION_PAGE - Notification tapped: ${notification.conversationId}");
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => ChatDetailPage(
-                  conversationId: notification.conversationId,
-                ),
-              ),
-            );
+            Logger.log(
+                "NOTIFICATION_PAGE - Notification tapped: ${notification.conversationId}");
+            ref
+                .read(notificationActionsViewModelProvider.notifier)
+                .navigateToChatDetail(context, notification.conversationId);
           },
         );
       },
@@ -225,7 +222,7 @@ class NotificationTile extends StatelessWidget {
                   ),
                 ),
                 SizedBox(width: 16),
-                
+
                 // Content
                 Expanded(
                   child: Column(
@@ -247,7 +244,8 @@ class NotificationTile extends StatelessWidget {
                             ),
                           ),
                           Text(
-                            DateFormatter.formatMessageTime(notification.timestamp),
+                            DateFormatter.formatMessageTime(
+                                notification.timestamp),
                             style: TextStyle(
                               fontSize: 12,
                               color: Colors.grey[500],
@@ -256,7 +254,7 @@ class NotificationTile extends StatelessWidget {
                         ],
                       ),
                       SizedBox(height: 4),
-                      
+
                       // Message
                       Text(
                         notification.message,

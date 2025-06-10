@@ -15,5 +15,10 @@ class NavigationViewModel extends StateNotifier<int> {
     Logger.log("Current Tab Index: $index");
   }
 
+  void resetToHome() {
+    state = 0;
+    Logger.log("Navigation reset to home (index: 0)");
+  }
+
   int get currentTab => state;
 }

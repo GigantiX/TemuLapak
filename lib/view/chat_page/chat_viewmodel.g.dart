@@ -655,7 +655,7 @@ class _ConversationMessagesProviderElement
 }
 
 String _$chatActionsViewModelHash() =>
-    r'df6880a613d1cf6e0429a0ae6603e85d6d0b2617';
+    r'3db51333ee314a039302a31ab75d11d1a98dcffb';
 
 /// See also [ChatActionsViewModel].
 @ProviderFor(ChatActionsViewModel)
@@ -672,7 +672,7 @@ final chatActionsViewModelProvider = AutoDisposeNotifierProvider<
 
 typedef _$ChatActionsViewModel
     = AutoDisposeNotifier<AppState<String, Exception>>;
-String _$chatListViewModelHash() => r'983d265d9e86d608e84de348dab6356559ef067c';
+String _$chatListViewModelHash() => r'117208d14365ab5670ece091475a66edd1df1a47';
 
 /// See also [ChatListViewModel].
 @ProviderFor(ChatListViewModel)

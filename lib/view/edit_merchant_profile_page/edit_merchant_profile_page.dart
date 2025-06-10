@@ -118,7 +118,7 @@ class _EditMerchantProfilePageState
 
         if (mounted) {
           Loading.hide();
-          
+
           // Show success animation
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -138,8 +138,12 @@ class _EditMerchantProfilePageState
             ),
           );
 
-          Future.delayed(Duration(seconds: 2), () {
-            if (mounted) Navigator.of(context).pop(true);
+          Future.delayed(Duration(seconds: 1), () {
+            if (mounted) {
+              ref
+                  .read(editMerchantProfileViewModelProvider.notifier)
+                  .navigateToMerchantProfile(context);
+            }
           });
         }
       },
@@ -196,6 +200,10 @@ class _EditMerchantProfilePageState
             TextEditingController(text: product.productName ?? '');
         final priceController =
             TextEditingController(text: product.productPrice ?? '');
+
+        nameController.addListener(_onFieldChanged);
+        priceController.addListener(_onFieldChanged);
+
         _productFields.add(ProductField(
           nameController: nameController,
           priceController: priceController,
@@ -278,10 +286,10 @@ class _EditMerchantProfilePageState
     setState(() {
       final nameController = TextEditingController();
       final priceController = TextEditingController();
-      
+
       nameController.addListener(_onFieldChanged);
       priceController.addListener(_onFieldChanged);
-      
+
       _productFields.add(ProductField(
         nameController: nameController,
         priceController: priceController,
@@ -289,16 +297,104 @@ class _EditMerchantProfilePageState
     });
   }
 
-  void _removeProductField() {
-    Logger.log("Removing last product field");
-    if (_productFields.length > 1) {
-      setState(() {
-        final field = _productFields.removeLast();
-        field.nameController.dispose();
-        field.priceController.dispose();
-        _hasChanges = _hasDataChanged();
-      });
-    }
+  Widget _buildSaveButton(bool isTablet) {
+    return AnimatedContainer(
+      duration: Duration(milliseconds: 300),
+      width: double.infinity,
+      height: isTablet ? 60 : 56,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: _hasChanges
+              ? [MyColor.orange, MyColor.orange.withValues(alpha: 0.8)]
+              : [Colors.grey[400]!, Colors.grey[500]!],
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: _hasChanges
+            ? [
+                BoxShadow(
+                  color: MyColor.orange.withValues(alpha: 0.3),
+                  blurRadius: 20,
+                  offset: Offset(0, 8),
+                ),
+              ]
+            : [],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: _hasChanges
+              ? () async {
+                  Logger.log("Save Profile Button Pressed");
+
+                  if (_formKey.currentState!.validate()) {
+                    // --- View's only job is to collect raw data ---
+                    final imageState = ref.read(editPickImageViewModelProvider);
+                    final File? imageFile = imageState.maybeWhen(
+                      success: (file) => file,
+                      orElse: () => null,
+                    );
+
+                    await ref
+                        .read(editMerchantProfileViewModelProvider.notifier)
+                        .saveChanges(
+                          merchantName: _nameController.text,
+                          merchantDesc: _descController.text,
+                          merchantCategory: _selectedCategories,
+                          productFields: _productFields,
+                          imageFile:
+                              imageFile != null ? XFile(imageFile.path) : null,
+                        );
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Row(
+                          children: [
+                            Icon(Icons.error_outline, color: Colors.white),
+                            SizedBox(width: 8),
+                            Text("Mohon lengkapi semua data yang diperlukan"),
+                          ],
+                        ),
+                        backgroundColor: Colors.red,
+                        behavior: SnackBarBehavior.floating,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                    );
+                  }
+                }
+              : null,
+          borderRadius: BorderRadius.circular(16),
+          child: Center(
+            child: AnimatedSwitcher(
+              duration: Duration(milliseconds: 300),
+              child: Row(
+                key: ValueKey(_hasChanges),
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    _hasChanges ? Icons.save : Icons.check_circle,
+                    color: Colors.white,
+                    size: isTablet ? 24 : 20,
+                  ),
+                  SizedBox(width: 12),
+                  Text(
+                    _hasChanges ? 'Simpan Perubahan' : 'Tidak Ada Perubahan',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: isTablet ? 18 : 16,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   @override
@@ -446,7 +542,8 @@ class _EditMerchantProfilePageState
     );
   }
 
-  Widget _buildMainContent(MerchantModel merchant, AppState<File?, Exception> imageState, bool isTablet) {
+  Widget _buildMainContent(MerchantModel merchant,
+      AppState<File?, Exception> imageState, bool isTablet) {
     return CustomScrollView(
       controller: _scrollController,
       slivers: [
@@ -705,9 +802,10 @@ class _EditMerchantProfilePageState
     );
   }
 
-  Widget _buildImageSection(AppState<File?, Exception> imageState, MerchantModel merchant, bool isTablet) {
+  Widget _buildImageSection(AppState<File?, Exception> imageState,
+      MerchantModel merchant, bool isTablet) {
     final aspectRatio = isTablet ? 2.5 : 16 / 9;
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -727,7 +825,9 @@ class _EditMerchantProfilePageState
               padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
                 color: imageState.maybeWhen(
-                  success: (file) => file != null ? Colors.amber.withValues(alpha: 0.1) : Colors.grey.withValues(alpha: 0.1),
+                  success: (file) => file != null
+                      ? Colors.amber.withValues(alpha: 0.1)
+                      : Colors.grey.withValues(alpha: 0.1),
                   orElse: () => Colors.grey.withValues(alpha: 0.1),
                 ),
                 borderRadius: BorderRadius.circular(20),
@@ -741,7 +841,8 @@ class _EditMerchantProfilePageState
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
                   color: imageState.maybeWhen(
-                    success: (file) => file != null ? Colors.amber[700] : Colors.grey[600],
+                    success: (file) =>
+                        file != null ? Colors.amber[700] : Colors.grey[600],
                     orElse: () => Colors.grey[600],
                   ),
                 ),
@@ -1104,7 +1205,7 @@ class _EditMerchantProfilePageState
         ..._productFields.asMap().entries.map((entry) {
           final index = entry.key;
           final product = entry.value;
-          
+
           return Container(
             margin: EdgeInsets.only(bottom: 20),
             padding: EdgeInsets.all(isTablet ? 24 : 20),
@@ -1208,7 +1309,7 @@ class _EditMerchantProfilePageState
             ),
           );
         }).toList(),
-        
+
         // Add Product Button
         Container(
           width: double.infinity,
@@ -1334,236 +1435,6 @@ class _EditMerchantProfilePageState
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildSaveButton(bool isTablet) {
-    return AnimatedContainer(
-      duration: Duration(milliseconds: 300),
-      width: double.infinity,
-      height: isTablet ? 60 : 56,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: _hasChanges 
-              ? [MyColor.orange, MyColor.orange.withValues(alpha: 0.8)]
-              : [Colors.grey[400]!, Colors.grey[500]!],
-          begin: Alignment.centerLeft,
-          end: Alignment.centerRight,
-        ),
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: _hasChanges ? [
-          BoxShadow(
-            color: MyColor.orange.withValues(alpha: 0.3),
-            blurRadius: 20,
-            offset: Offset(0, 8),
-          ),
-        ] : [],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: _hasChanges ? () async {
-            Logger.log("Save Profile Button Pressed");
-
-            if (_formKey.currentState!.validate()) {
-              if (_selectedCategories.isEmpty) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Row(
-                      children: [
-                        Icon(Icons.warning, color: Colors.white),
-                        SizedBox(width: 8),
-                        Text("Silakan pilih minimal satu kategori"),
-                      ],
-                    ),
-                    backgroundColor: Colors.orange,
-                    behavior: SnackBarBehavior.floating,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                  ),
-                );
-                return;
-              }
-
-              try {
-                List<Product> products = [];
-                for (var field in _productFields) {
-                  products.add(Product(
-                    productName: field.nameController.text,
-                    productPrice: field.priceController.text,
-                  ));
-                }
-
-                final imageState = ref.read(editPickImageViewModelProvider);
-                final File? imageFile = imageState.maybeWhen(
-                  success: (file) => file,
-                  orElse: () => null,
-                );
-
-                await ref
-                    .read(editMerchantProfileViewModelProvider.notifier)
-                    .updateMerchantProfile(
-                      merchantName: _nameController.text,
-                      merchantDesc: _descController.text,
-                      merchantCategory: _selectedCategories,
-                      products: products,
-                      imageFile: imageFile != null ? XFile(imageFile.path) : null,
-                    );
-              } catch (e) {
-                Logger.error("Unexpected error during merchant profile update: $e");
-                Loading.hide();
-
-                if (!mounted) return;
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text("Terjadi kesalahan: ${e.toString()}"),
-                    backgroundColor: Colors.red,
-                    behavior: SnackBarBehavior.floating,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                  ),
-                );
-              }
-            } else {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Row(
-                    children: [
-                      Icon(Icons.error_outline, color: Colors.white),
-                      SizedBox(width: 8),
-                      Text("Mohon lengkapi semua data yang diperlukan"),
-                    ],
-                  ),
-                  backgroundColor: Colors.red,
-                  behavior: SnackBarBehavior.floating,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                ),
-              );
-            }
-          } : null,
-          borderRadius: BorderRadius.circular(16),
-          child: Center(
-            child: AnimatedSwitcher(
-              duration: Duration(milliseconds: 300),
-              child: Row(
-                key: ValueKey(_hasChanges),
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    _hasChanges ? Icons.save : Icons.check_circle,
-                    color: Colors.white,
-                    size: isTablet ? 24 : 20,
-                  ),
-                  SizedBox(width: 12),
-                  Text(
-                    _hasChanges ? 'Simpan Perubahan' : 'Tidak Ada Perubahan',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: isTablet ? 18 : 16,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  void _showUnsavedChangesDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
-        title: Row(
-          children: [
-            Container(
-              padding: EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.amber.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Icon(
-                Icons.warning_amber,
-                color: Colors.amber[700],
-                size: 24,
-              ),
-            ),
-            SizedBox(width: 12),
-            Text(
-              'Perubahan Belum Disimpan',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ],
-        ),
-        content: Text(
-          'Anda memiliki perubahan yang belum disimpan. Apakah Anda yakin ingin keluar tanpa menyimpan?',
-          style: TextStyle(
-            fontSize: 16,
-            height: 1.4,
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-            },
-            child: Text(
-              'Batal',
-              style: TextStyle(
-                color: Colors.grey[600],
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              Navigator.of(context).pop();
-            },
-            child: Text(
-              'Keluar Tanpa Simpan',
-              style: TextStyle(
-                color: Colors.red[600],
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              // Trigger save
-              if (_formKey.currentState!.validate() && _selectedCategories.isNotEmpty) {
-                // Auto-save logic here if needed
-              }
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: MyColor.orange,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-            child: Text(
-              'Simpan',
-              style: TextStyle(
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        ],
-      ),
     );
   }
 }

@@ -7,7 +7,7 @@ part of 'live_tracking_notifier.dart';
 // **************************************************************************
 
 String _$liveTrackingNotifierHash() =>
-    r'a46c3971465cdc6660dd183646c7b066882b5727';
+    r'da192a108083f6008b3d449f59c54788f1eadb1b';
 
 /// See also [LiveTrackingNotifier].
 @ProviderFor(LiveTrackingNotifier)

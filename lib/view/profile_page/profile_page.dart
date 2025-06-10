@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:temulapak_app/assets/mycolor.dart';
+import 'package:temulapak_app/view/navigation_page/navigation_viewmodel.dart';
 import 'package:temulapak_app/view/profile_page/profile_viewmodel.dart';
 
 class ProfilePage extends ConsumerStatefulWidget {
@@ -22,27 +23,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
   Widget build(BuildContext context) {
     final userState = ref.watch(profileViewModelProvider);
     final profileVM = ref.watch(profileViewModelProvider.notifier);
-
-    // Handle state changes (loading, error, etc.)
-    userState.maybeWhen(
-      loading: () {
-        // Handle loading state if needed
-      },
-      error: (error, message) {
-        // Handle error state if needed
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(message ?? 'An error occurred'),
-                backgroundColor: Colors.red,
-              ),
-            );
-          }
-        });
-      },
-      orElse: () {},
-    );
+    final navbarVM = ref.read(navigationViewModelProvider.notifier);
 
     return Scaffold(
       backgroundColor: MyColor.orange,
@@ -169,7 +150,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       const SizedBox(height: 20),
-                      
+
                       // Merchant Page Button
                       Container(
                         width: double.infinity,

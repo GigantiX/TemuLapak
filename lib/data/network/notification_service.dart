@@ -374,14 +374,10 @@ class NotificationService {
     await _initializeFCMToken();
   }
 
-  /// Clear FCM token when user logs out
-  Future<void> clearFCMTokenOnLogout() async {
+  Future<void> clearFCMTokenWithUID(String uid) async {
     try {
-      final userId = _userService.getCurrentUID();
-      if (userId != null) {
-        await _firestore.collection('fcm_tokens').doc(userId).delete();
-        Logger.log("NOTIFICATION_SERVICE - FCM token cleared on logout");
-      }
+      await _firestore.collection('fcm_tokens').doc(uid).delete();
+      Logger.log("NOTIFICATION_SERVICE - FCM token cleared on logout");
     } catch (e) {
       Logger.error("NOTIFICATION_SERVICE - Error clearing FCM token", error: e);
     }

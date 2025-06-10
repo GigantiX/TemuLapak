@@ -7,7 +7,7 @@ part of 'edit_merchant_profile_viewmodel.dart';
 // **************************************************************************
 
 String _$editMerchantProfileViewModelHash() =>
-    r'801f1e6c75303b933a2c622e83c378e1daa76e9a';
+    r'313e7d1f862806e2ad86d1a201d8404cec564ceb';
 
 /// See also [EditMerchantProfileViewModel].
 @ProviderFor(EditMerchantProfileViewModel)
