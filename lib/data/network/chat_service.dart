@@ -202,79 +202,82 @@ class ChatService {
   // === MESSAGE MANAGEMENT ===
 
   /// Send message with 350 character limit and notification
-  Future<void> sendMessage(String conversationId, String text, String senderId) async {
+  Future<void> sendMessage(String conversationId, String text, String senderRawUid) async {
     try {
       // Validate message
-      if (text.trim().isEmpty) {
-        throw Exception("Message cannot be empty");
-      }
-      
-      if (text.length > 350) {
-        throw Exception("Message too long (maximum 350 characters)");
-      }
-      
-      final messageId = _firestore.collection('temp').doc().id;
+      if (text.trim().isEmpty) throw Exception("Message cannot be empty");
+      if (text.length > 350) throw Exception("Message too long (maximum 350 characters)");
+
       final timestamp = DateTime.now();
+      Logger.log("CHAT_SERVICE - Sending message from raw UID: $senderRawUid");
+
+      // 1. Fetch the conversation document to get context
+      final convDoc = await _firestore.collection('conversations').doc(conversationId).get();
+      if (!convDoc.exists) {
+        throw Exception("Conversation not found");
+      }
+      final conversation = ConversationModel.fromMap(convDoc.data()!);
+
+      // 2. Determine sender and receiver roles for THIS conversation
+      // A user is the merchant for this chat if their prefixed UID matches the conversation's merchantId
+      final isSenderTheMerchant = conversation.merchantId == "MRCN_${senderRawUid}";
+
+      final String senderParticipantId;
+      final String receiverParticipantId;
+
+      if (isSenderTheMerchant) {
+        senderParticipantId = conversation.merchantId;
+        // The receiver is the other participant in the list
+        receiverParticipantId = conversation.participants.firstWhere((p) => p != senderParticipantId);
+      } else {
+        senderParticipantId = senderRawUid;
+        receiverParticipantId = conversation.merchantId;
+      }
       
-      Logger.log("CHAT_SERVICE - Sending message: $messageId from $senderId");
-      
-      // Create message
+      Logger.log("CHAT_SERVICE - Sender Role: ${isSenderTheMerchant ? 'Merchant' : 'User'}. Sender ID: $senderParticipantId, Receiver ID: $receiverParticipantId");
+
+      // 3. Get sender's name for the notification from the correct persona
+      final senderName = conversation.participantDetails[senderParticipantId]?.name ?? 'Unknown';
+
+      // 4. Create the message model
+      final messageId = _firestore.collection('temp').doc().id;
       final message = MessageModel(
         id: messageId,
-        senderId: senderId,
+        senderId: senderParticipantId, // Use the correct contextual participant ID
         text: text.trim(),
         timestamp: timestamp,
-        type: 'text',
-        readBy: [senderId], // Sender has read it
-        isEdited: false,
+        readBy: [senderParticipantId],
       );
-      
-      // Get receiver ID and sender name for notification
-      final receiverId = await _getReceiverId(conversationId, senderId);
-      final senderName = await _getSenderName(conversationId, senderId);
-      
-      Logger.log("CHAT_SERVICE - Receiver ID: $receiverId, Sender: $senderName");
-      
-      // Batch write for atomicity
+
+      // 5. Create a batch write for atomicity
       final batch = _firestore.batch();
-      
-      // 1. Add message to subcollection
-      final messageRef = _firestore
-          .collection('conversations')
-          .doc(conversationId)
-          .collection('messages')
-          .doc(messageId);
+      final messageRef = convDoc.reference.collection('messages').doc(messageId);
       batch.set(messageRef, message.toMap());
-      
-      // 2. Update conversation
-      final conversationRef = _firestore.collection('conversations').doc(conversationId);
-      
-      batch.update(conversationRef, {
+
+      batch.update(convDoc.reference, {
         'lastMessage': {
           'text': text.trim(),
-          'senderId': senderId,
+          'senderId': senderParticipantId,
           'timestamp': timestamp.toIso8601String(),
           'type': 'text',
         },
         'updatedAt': timestamp.toIso8601String(),
-        // FIXED: Increment unread count for receiver only
-        'unreadCount.$receiverId': FieldValue.increment(1),
-        // FIXED: Reset unread count for sender to 0 (they just sent a message)
-        'unreadCount.$senderId': 0,
+        'unreadCount.$receiverParticipantId': FieldValue.increment(1),
+        'unreadCount.$senderParticipantId': 0, // Reset sender's unread count
       });
-      
+
       await batch.commit();
-      Logger.log("CHAT_SERVICE - Message sent successfully, unread updated for $receiverId");
-      
-      // Send notification to receiver
+      Logger.log("CHAT_SERVICE - Message sent by $senderParticipantId, unread count updated for $receiverParticipantId");
+
+      // 6. Send notification with the correct senderName
       await _sendNotificationToReceiver(
-        receiverId: receiverId,
-        senderId: senderId,
-        senderName: senderName,
+        receiverId: receiverParticipantId,
+        senderId: senderParticipantId,
+        senderName: senderName, // This will now correctly be the Merchant's name if they sent it
         message: text.trim(),
         conversationId: conversationId,
       );
-      
+
     } catch (e) {
       Logger.error("CHAT_SERVICE - Error sending message", error: e);
       rethrow;
