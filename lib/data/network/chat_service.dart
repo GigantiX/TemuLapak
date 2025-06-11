@@ -312,29 +312,6 @@ class ChatService {
     }
   }
 
-  /// Get sender name from conversation participants
-  Future<String> _getSenderName(String conversationId, String senderId) async {
-    try {
-      final doc = await _firestore.collection('conversations').doc(conversationId).get();
-      if (doc.exists) {
-        final data = doc.data()!;
-        final participantDetails = data['participantDetails'] as Map<String, dynamic>?;
-        
-        if (participantDetails != null && participantDetails.containsKey(senderId)) {
-          final senderDetail = participantDetails[senderId] as Map<String, dynamic>;
-          return senderDetail['name'] ?? 'Unknown';
-        }
-      }
-      
-      // Fallback to role-based name
-      return senderId.startsWith('MRCN_') ? 'Penjual' : 'Pembeli';
-      
-    } catch (e) {
-      Logger.error("CHAT_SERVICE - Error getting sender name", error: e);
-      return 'Unknown';
-    }
-  }
-
   /// Get messages stream for a conversation
   Stream<List<MessageModel>> getMessages(String conversationId) {
     Logger.log("CHAT_SERVICE - Getting messages stream for: $conversationId");
