@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:temulapak_app/assets/mycolor.dart';
+import 'package:temulapak_app/utils/custom_dialog.dart';
+import 'package:temulapak_app/utils/loading/loading.dart';
+import 'package:temulapak_app/view/login_page/login_page.dart';
 import 'package:temulapak_app/view/navigation_page/navigation_viewmodel.dart';
 import 'package:temulapak_app/view/profile_page/profile_viewmodel.dart';
 
@@ -18,6 +21,53 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
     Future.microtask(
         () => ref.read(profileViewModelProvider.notifier).getUser());
   }
+
+  void _showLogoutDialog(BuildContext context, WidgetRef ref) {
+    showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => CustomAlertDialog(
+        title: "Logout",
+        content: "Apakah Anda yakin ingin keluar?",
+        confirmText: "Ya",
+        cancelText: "Tidak",
+        icon: Icons.logout,
+        iconColor: Colors.white,
+        dialogColor: MyColor.red,
+        onConfirm: () => Navigator.of(dialogContext).pop(true),
+        onCancel: () => Navigator.of(dialogContext).pop(false),
+      ),
+    ).then((confirmed) async {
+      if (confirmed == true) {
+        if (!context.mounted) return;
+
+        Loading.show(context);
+        
+        final success = await ref.read(profileViewModelProvider.notifier).signOut();
+
+        Loading.hide();
+
+        if (success && context.mounted) {
+          // Invalidate the providers from the UI layer AFTER the logic is done.
+          ref.invalidate(profileViewModelProvider);
+          ref.read(navigationViewModelProvider.notifier).resetToHome();
+
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (context) => const LoginPage()),
+            (route) => false,
+          );
+        } else if (!success && context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Gagal keluar. Periksa koneksi internet Anda.'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    });
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -227,7 +277,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                         subtitle: "Keluar dari akun",
                         textColor: MyColor.red,
                         iconColor: MyColor.red,
-                        onTap: () => profileVM.showLogoutDialog(context, ref),
+                        onTap: () => _showLogoutDialog(context, ref),
                       ),
 
                       // Version text

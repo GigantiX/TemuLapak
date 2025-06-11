@@ -1,22 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:temulapak_app/assets/mycolor.dart';
 import 'package:temulapak_app/data/network/login_service.dart';
 import 'package:temulapak_app/data/network/notification_service.dart';
 import 'package:temulapak_app/data/network/user_service.dart';
 import 'package:temulapak_app/model/state/app_state.dart';
 import 'package:temulapak_app/model/user/user_model.dart';
-import 'package:temulapak_app/utils/custom_dialog.dart';
 import 'package:temulapak_app/utils/logger.dart';
 import 'package:temulapak_app/utils/loading/loading.dart';
-import 'package:temulapak_app/utils/network_checker.dart';
 import 'package:temulapak_app/view/help_centre_page/help_center_page.dart';
 import 'package:temulapak_app/view/login_page/login_viewmodel.dart';
 import 'package:temulapak_app/view/merchant_dashboard_page/merchant_dashboard_page.dart';
 import 'package:temulapak_app/view/faq_page/faq_page.dart';
 import 'package:temulapak_app/view/about_page/about_page.dart';
-import 'package:temulapak_app/view/login_page/login_page.dart';
-import 'package:temulapak_app/view/navigation_page/navigation_viewmodel.dart';
 import 'package:temulapak_app/view/register_merchant_page/register_merchant_page.dart';
 
 final profileViewModelProvider =
@@ -25,15 +20,16 @@ final profileViewModelProvider =
   final userService = UserService();
   final loginService = ref.read(loginServiceProvider);
 
-  return ProfileViewModel(userService, loginService);
+  return ProfileViewModel(userService, loginService, ref);
 });
 
 class ProfileViewModel extends StateNotifier<AppState<UserModel, Exception>> {
   final UserService _userService;
   final LoginService _loginService;
   final NotificationService _notificationService = NotificationService.instance;
+  final Ref _ref;
 
-  ProfileViewModel(this._userService, this._loginService)
+  ProfileViewModel(this._userService, this._loginService, this._ref)
       : super(AppState.idle());
 
   Future<void> getUser() async {
@@ -138,88 +134,29 @@ class ProfileViewModel extends StateNotifier<AppState<UserModel, Exception>> {
     );
   }
 
-  Future<void> signOut(BuildContext context) async {
+  Future<bool> signOut() async {
     Logger.log("PROFILEVM - Initiating sign out process");
+    state = AppState.loading();
 
-    final success = await NetworkChecker.instance.run(
-      context: context,
-      customOfflineMessage: "Can't connect to the internet",
-      action: () async {
-        Logger.log("PROFILEVM - Signing out user");
+    try {
+      await _notificationService.clearFCMTokenOnLogout();
+      await _loginService.signOut();
 
-        try {
-          await _notificationService.clearFCMTokenOnLogout();
-          await _loginService.signOut();
-          Logger.log("PROFILEVM - User signed out successfully");
-          state = AppState.idle();
-          return true;
-        } catch (e) {
-          Logger.error("PROFILEVM - Error signing out", error: e);
-          state = AppState.error(Exception(e.toString()),
-              message: 'Failed to sign out');
-          return false;
-        }
-      },
-    );
-
-    if (success == true && context.mounted) {
-      Logger.log(
-          "PROFILEVM - Navigating to login page after successful logout");
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(builder: (context) => const LoginPage()),
-        (route) => false,
-      );
+      _ref.invalidate(loginViewModelProvider);
+      
+      Logger.log("PROFILEVM - User signed out successfully");
+      return true;
+    } catch (e) {
+      Logger.error("PROFILEVM - Error signing out", error: e);
+      state = AppState.error(Exception(e.toString()),
+          message: 'Failed to sign out');
+      return false;
     }
   }
+
 
   Future<void> refreshProfile() async {
     Logger.log("PROFILEVM - Refreshing user profile");
     await getUser();
-  }
-
-  // Show logout confirmation dialog
-  Future<void> showLogoutDialog(BuildContext context, WidgetRef ref) async {
-    final navigationVM = ref.read(navigationViewModelProvider.notifier);
-    Logger.log("PROFILEVM - Showing logout confirmation dialog");
-
-    await showDialog(
-      context: context,
-      builder: (context) {
-        return CustomAlertDialog(
-          title: "Logout",
-          content: "Do you really want to logout?",
-          confirmText: "Yes",
-          cancelText: "No",
-          icon: Icons.logout,
-          iconColor: Colors.white,
-          dialogColor: MyColor.red,
-          onConfirm: () async {
-            Navigator.pop(context);
-            final success = await NetworkChecker.instance.run(
-              context: context,
-              customOfflineMessage: "Can't connect to the internet",
-              action: () async {
-                navigationVM.resetToHome();
-                ref.invalidate(loginViewModelProvider);
-                await signOut(context);
-                ref.invalidate(profileViewModelProvider);
-                return true;
-              },
-            );
-            if (success == true && context.mounted) {
-              Navigator.pushAndRemoveUntil(
-                context,
-                MaterialPageRoute(builder: (context) => const LoginPage()),
-                (route) => false,
-              );
-            }
-          },
-          onCancel: () {
-            Navigator.pop(context);
-          },
-        );
-      },
-    );
   }
 }
