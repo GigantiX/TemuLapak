@@ -11,11 +11,12 @@ import 'package:temulapak_app/utils/logger.dart';
 import 'package:temulapak_app/utils/loading/loading.dart';
 import 'package:temulapak_app/utils/network_checker.dart';
 import 'package:temulapak_app/view/help_centre_page/help_center_page.dart';
+import 'package:temulapak_app/view/login_page/login_viewmodel.dart';
 import 'package:temulapak_app/view/merchant_dashboard_page/merchant_dashboard_page.dart';
 import 'package:temulapak_app/view/faq_page/faq_page.dart';
 import 'package:temulapak_app/view/about_page/about_page.dart';
 import 'package:temulapak_app/view/login_page/login_page.dart';
-import 'package:temulapak_app/view/login_page/login_viewmodel.dart' as LoginVM;
+import 'package:temulapak_app/view/navigation_page/navigation_viewmodel.dart';
 import 'package:temulapak_app/view/register_merchant_page/register_merchant_page.dart';
 
 final profileViewModelProvider =
@@ -23,6 +24,7 @@ final profileViewModelProvider =
         (ref) {
   final userService = UserService();
   final loginService = ref.read(loginServiceProvider);
+
   return ProfileViewModel(userService, loginService);
 });
 
@@ -92,7 +94,8 @@ class ProfileViewModel extends StateNotifier<AppState<UserModel, Exception>> {
     state.maybeWhen(
       success: (user) {
         if (user.isMerchant == true) {
-          Logger.log("PROFILEVM - User is a merchant, navigating to MerchantDashboardPage");
+          Logger.log(
+              "PROFILEVM - User is a merchant, navigating to MerchantDashboardPage");
           Future.delayed(Duration(milliseconds: 100), () {
             if (!context.mounted) return;
             Navigator.push(
@@ -106,7 +109,8 @@ class ProfileViewModel extends StateNotifier<AppState<UserModel, Exception>> {
           });
         } else {
           Loading.hide();
-          Logger.log("PROFILEVM - User is not a merchant, navigating to RegisterMerchantPage");
+          Logger.log(
+              "PROFILEVM - User is not a merchant, navigating to RegisterMerchantPage");
           Future.delayed(Duration(milliseconds: 100), () {
             if (!context.mounted) return;
             Navigator.push(
@@ -136,13 +140,13 @@ class ProfileViewModel extends StateNotifier<AppState<UserModel, Exception>> {
 
   Future<void> signOut(BuildContext context) async {
     Logger.log("PROFILEVM - Initiating sign out process");
-    
+
     final success = await NetworkChecker.instance.run(
       context: context,
       customOfflineMessage: "Can't connect to the internet",
       action: () async {
         Logger.log("PROFILEVM - Signing out user");
-        
+
         try {
           await _notificationService.clearFCMTokenOnLogout();
           await _loginService.signOut();
@@ -159,7 +163,8 @@ class ProfileViewModel extends StateNotifier<AppState<UserModel, Exception>> {
     );
 
     if (success == true && context.mounted) {
-      Logger.log("PROFILEVM - Navigating to login page after successful logout");
+      Logger.log(
+          "PROFILEVM - Navigating to login page after successful logout");
       Navigator.pushAndRemoveUntil(
         context,
         MaterialPageRoute(builder: (context) => const LoginPage()),
@@ -175,8 +180,9 @@ class ProfileViewModel extends StateNotifier<AppState<UserModel, Exception>> {
 
   // Show logout confirmation dialog
   Future<void> showLogoutDialog(BuildContext context, WidgetRef ref) async {
+    final navigationVM = ref.read(navigationViewModelProvider.notifier);
     Logger.log("PROFILEVM - Showing logout confirmation dialog");
-    
+
     await showDialog(
       context: context,
       builder: (context) {
@@ -194,6 +200,9 @@ class ProfileViewModel extends StateNotifier<AppState<UserModel, Exception>> {
               context: context,
               customOfflineMessage: "Can't connect to the internet",
               action: () async {
+                navigationVM.resetToHome();
+                ref.invalidate(profileViewModelProvider);
+                ref.invalidate(loginViewModelProvider);
                 await signOut(context);
                 return true;
               },
