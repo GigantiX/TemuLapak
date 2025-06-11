@@ -68,7 +68,6 @@ class _ChatPageState extends ConsumerState<ChatPage>
               style: TextStyle(
                 color: MyColor.blackPlain,
                 fontWeight: FontWeight.w600,
-                fontSize: 18,
               ),
             ),
             backgroundColor: Colors.white,

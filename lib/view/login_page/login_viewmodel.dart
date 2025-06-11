@@ -4,7 +4,6 @@ import 'package:temulapak_app/data/network/notification_service.dart';
 import 'package:temulapak_app/model/login/login_state.dart';
 import 'package:temulapak_app/utils/logger.dart';
 
-final loginServiceProvider = Provider((ref) => LoginService());
 final loginViewModelProvider =
     StateNotifierProvider<LoginViewModel, LoginState>((ref) {
   final loginModel = ref.read(loginServiceProvider);

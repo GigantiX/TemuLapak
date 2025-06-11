@@ -38,6 +38,7 @@ class MerchantDashboardViewmodel extends _$MerchantDashboardViewmodel {
   }
 
   void navigateBack(BuildContext context) {
+    
     Navigator.pop(context);
   }
 
