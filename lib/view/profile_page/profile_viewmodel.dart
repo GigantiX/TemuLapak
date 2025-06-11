@@ -201,9 +201,9 @@ class ProfileViewModel extends StateNotifier<AppState<UserModel, Exception>> {
               customOfflineMessage: "Can't connect to the internet",
               action: () async {
                 navigationVM.resetToHome();
-                ref.invalidate(profileViewModelProvider);
                 ref.invalidate(loginViewModelProvider);
                 await signOut(context);
+                ref.invalidate(profileViewModelProvider);
                 return true;
               },
             );
