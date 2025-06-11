@@ -102,7 +102,8 @@ class ShowSnackbarCommand extends ViewModelCommand {
   final String message;
   final Color backgroundColor;
   final int durationSeconds;
-  const ShowSnackbarCommand(this.message, this.backgroundColor, this.durationSeconds);
+  const ShowSnackbarCommand(
+      this.message, this.backgroundColor, this.durationSeconds);
 }
 
 // Enhanced Home State Notifier
@@ -113,63 +114,58 @@ class EnhancedHomeStateNotifier extends _$EnhancedHomeStateNotifier {
     ref.onDispose(() {
       _cleanup();
     });
-    
+
     return const EnhancedHomeState();
   }
 
   void _cleanup() {
     Logger.log("ENHANCED_HOME_VM - Disposing resources");
   }
-  
+
   // Initialize all home data
   Future<void> initializeHomeData() async {
     Logger.log("ENHANCED_HOME_VM - Initializing home data");
-    
+
     state = state.copyWith(isLoading: true, errorMessage: null);
-    
+
     try {
       await Future.wait([
         _loadUser(),
         _loadAddress(),
         _loadRecommendations(),
       ]);
-      
+
       state = state.copyWith(isLoading: false);
       Logger.log("ENHANCED_HOME_VM - Home data initialization completed");
-      
     } catch (e) {
       Logger.error("ENHANCED_HOME_VM - Error initializing home data", error: e);
       state = state.copyWith(
-        isLoading: false,
-        errorMessage: 'Failed to load home data'
-      );
+          isLoading: false, errorMessage: 'Failed to load home data');
     }
   }
 
   // Refresh all data
   Future<void> refreshAllData() async {
     Logger.log("ENHANCED_HOME_VM - Refreshing all data");
-    
+
     state = state.copyWith(isRefreshing: true, errorMessage: null);
-    
+
     try {
       await Future.wait([
         _loadUser(),
-        _loadAddress(), 
+        _loadAddress(),
         _loadRecommendations(),
       ]);
-      
+
       state = state.copyWith(isRefreshing: false);
       Logger.log("ENHANCED_HOME_VM - Refresh completed successfully");
-      
     } catch (e) {
       Logger.error("ENHANCED_HOME_VM - Error during refresh", error: e);
-      
+
       state = state.copyWith(
-        isRefreshing: false,
-        errorMessage: 'Gagal memperbarui data. Silakan coba lagi.'
-      );
-      
+          isRefreshing: false,
+          errorMessage: 'Gagal memperbarui data. Silakan coba lagi.');
+
       _emitCommand(ShowSnackbarCommand(
         'Gagal memperbarui data. Silakan coba lagi.',
         MyColor.red,
@@ -196,13 +192,13 @@ class EnhancedHomeStateNotifier extends _$EnhancedHomeStateNotifier {
     try {
       final userService = ref.read(userServiceProvider);
       final user = await userService.getCurrentUser();
-      
+
       if (user != null) {
         state = state.copyWith(user: user);
       }
     } catch (e) {
       Logger.error("ENHANCED_HOME_VM - Error loading user", error: e);
-      throw e;
+      rethrow;
     }
   }
 
@@ -210,22 +206,21 @@ class EnhancedHomeStateNotifier extends _$EnhancedHomeStateNotifier {
     try {
       final locationService = ref.read(locationServicesProvider);
       final position = await locationService.getCurrentLocation();
-      
+
       if (position == null) {
         state = state.copyWith(address: "No location");
         return;
       }
-      
+
       final geocodingService = ref.read(geocodingServiceProvider);
       try {
         final address = await geocodingService.getAddressFromLatLng(
-          position.latitude, 
-          position.longitude
-        );
-        
+            position.latitude, position.longitude);
+
         state = state.copyWith(address: address);
       } catch (geocodingError) {
-        Logger.error("ENHANCED_HOME_VM - Error in geocoding", error: geocodingError);
+        Logger.error("ENHANCED_HOME_VM - Error in geocoding",
+            error: geocodingError);
         state = state.copyWith(address: "Error fetching address");
       }
     } catch (e) {
@@ -238,12 +233,13 @@ class EnhancedHomeStateNotifier extends _$EnhancedHomeStateNotifier {
     try {
       final locationService = ref.read(locationServicesProvider);
       final position = await locationService.getCurrentLocation();
-      
+
       if (position == null) {
-        Logger.error("ENHANCED_HOME_VM - No location available for recommendations");
+        Logger.error(
+            "ENHANCED_HOME_VM - No location available for recommendations");
         return;
       }
-      
+
       final merchantService = ref.read(merchantServiceProvider);
       final nearbyMerchants = await merchantService.getNearbyMerchants(
         latitude: position.latitude,
@@ -251,13 +247,14 @@ class EnhancedHomeStateNotifier extends _$EnhancedHomeStateNotifier {
         radiusInKm: 20.0,
         limit: 15,
       );
-      
+
       List<MerchantWithDistanceHome> merchantsWithDistance = [];
-      
+
       for (final merchant in nearbyMerchants) {
         double? distance;
-        
-        if (merchant.merchantLocLat != null && merchant.merchantLocLong != null) {
+
+        if (merchant.merchantLocLat != null &&
+            merchant.merchantLocLong != null) {
           distance = _calculateDistance(
             position.latitude,
             position.longitude,
@@ -265,51 +262,55 @@ class EnhancedHomeStateNotifier extends _$EnhancedHomeStateNotifier {
             merchant.merchantLocLong!,
           );
         }
-        
+
         merchantsWithDistance.add(MerchantWithDistanceHome(
           merchant: merchant,
           distance: distance,
           isGeoEnhanced: true,
         ));
       }
-      
+
       // Sort by popularity DESC, then distance ASC
       merchantsWithDistance.sort((a, b) {
         final popularityA = a.merchant.merchantPopularity ?? 0;
         final popularityB = b.merchant.merchantPopularity ?? 0;
-        
+
         if (popularityA != popularityB) {
           return popularityB.compareTo(popularityA);
         }
-        
+
         if (a.distance == null && b.distance == null) return 0;
         if (a.distance == null) return 1;
         if (b.distance == null) return -1;
-        
+
         return a.distance!.compareTo(b.distance!);
       });
-      
+
       final recommendations = merchantsWithDistance.take(5).toList();
-      
+
       state = state.copyWith(recommendations: recommendations);
-      Logger.log("ENHANCED_HOME_VM - Loaded ${recommendations.length} recommendations");
-      
+      Logger.log(
+          "ENHANCED_HOME_VM - Loaded ${recommendations.length} recommendations");
     } catch (e) {
-      Logger.error("ENHANCED_HOME_VM - Error loading recommendations", error: e);
-      throw e;
+      Logger.error("ENHANCED_HOME_VM - Error loading recommendations",
+          error: e);
+      rethrow;
     }
   }
 
-  double _calculateDistance(double lat1, double lon1, double lat2, double lon2) {
+  double _calculateDistance(
+      double lat1, double lon1, double lat2, double lon2) {
     const double earthRadius = 6371;
 
     double dLat = _degreesToRadians(lat2 - lat1);
     double dLon = _degreesToRadians(lon2 - lon1);
 
     double a = sin(dLat / 2) * sin(dLat / 2) +
-        cos(_degreesToRadians(lat1)) * cos(_degreesToRadians(lat2)) *
-        sin(dLon / 2) * sin(dLon / 2);
-    
+        cos(_degreesToRadians(lat1)) *
+            cos(_degreesToRadians(lat2)) *
+            sin(dLon / 2) *
+            sin(dLon / 2);
+
     double c = 2 * atan2(sqrt(a), sqrt(1 - a));
     double distance = earthRadius * c;
 
@@ -371,7 +372,7 @@ class HomeViewmodel extends _$HomeViewmodel {
 class AddressViewModel extends _$AddressViewModel {
   @override
   AppState<String, Exception> build() {
-    return AppState.idle(); 
+    return AppState.idle();
   }
 
   Future<void> getAddress() async {
@@ -379,25 +380,31 @@ class AddressViewModel extends _$AddressViewModel {
     try {
       final locationService = ref.read(locationServicesProvider);
       final position = await locationService.getCurrentLocation();
-      
+
       if (position == null) {
-        state = AppState.success("No location");
+        Logger.error("Failed to get current location (permission denied or service disabled).");
+        state = AppState.error(
+          Exception('Location not available'),
+          message: 'Izinkan lokasi untuk menampilkan alamat'
+        );
         return;
       }
-      
+
       final geocodingService = ref.read(geocodingServiceProvider);
       try {
         final address = await geocodingService.getAddressFromLatLng(
-          position.latitude, 
-          position.longitude
-        );
-        
+            position.latitude, position.longitude);
+
         state = AppState.success(address);
       } catch (geocodingError) {
         state = AppState.success("Error fetching address");
       }
     } catch (e) {
-      state = AppState.success("No location");
+      Logger.error("Error fetching address", error: e);
+      state = AppState.error(
+        Exception('Failed to get address'),
+        message: 'Gagal mendapatkan alamat'
+      );
     }
   }
 }
@@ -430,7 +437,7 @@ class MerchantWithDistanceHome {
 class RecommendedMerchants extends _$RecommendedMerchants {
   Position? _userPosition;
   bool _geoServiceInitialized = false;
-  
+
   @override
   AppState<List<MerchantWithDistanceHome>, Exception> build() {
     return AppState.idle();
@@ -438,7 +445,7 @@ class RecommendedMerchants extends _$RecommendedMerchants {
 
   Future<void> _initializeGeoService() async {
     if (_geoServiceInitialized) return;
-    
+
     try {
       final geoService = ref.read(geoMerchantServiceProvider);
       _geoServiceInitialized = await geoService.initialize();
@@ -452,25 +459,23 @@ class RecommendedMerchants extends _$RecommendedMerchants {
     state = AppState.loading();
     try {
       await _initializeGeoService();
-      
+
       final locationService = ref.read(locationServicesProvider);
       final position = await locationService.getCurrentLocation();
-      
+
       if (position == null) {
         Logger.error("HOMEVM_GEO - No location available for recommendations");
-        state = AppState.error(
-          Exception('Location not available'),
-          message: 'Cannot get recommendations without location'
-        );
+        state = AppState.error(Exception('Location not available'),
+            message: 'Cannot get recommendations without location');
         return;
       }
-      
+
       _userPosition = position;
-      
+
       final merchantService = ref.read(merchantServiceProvider);
       bool isGeoEnhanced = false;
       List<MerchantModel> nearbyMerchants;
-      
+
       try {
         nearbyMerchants = await merchantService.getNearbyMerchants(
           latitude: position.latitude,
@@ -478,12 +483,11 @@ class RecommendedMerchants extends _$RecommendedMerchants {
           radiusInKm: 20.0,
           limit: 15,
         );
-        
+
         isGeoEnhanced = _geoServiceInitialized && nearbyMerchants.isNotEmpty;
-        
       } catch (e) {
         Logger.error("HOMEVM_GEO - Error in merchant search", error: e);
-        
+
         nearbyMerchants = await merchantService.getNearbyMerchants(
           latitude: position.latitude,
           longitude: position.longitude,
@@ -492,13 +496,14 @@ class RecommendedMerchants extends _$RecommendedMerchants {
         );
         isGeoEnhanced = false;
       }
-      
+
       List<MerchantWithDistanceHome> merchantsWithDistance = [];
-      
+
       for (final merchant in nearbyMerchants) {
         double? distance;
-        
-        if (merchant.merchantLocLat != null && merchant.merchantLocLong != null) {
+
+        if (merchant.merchantLocLat != null &&
+            merchant.merchantLocLong != null) {
           distance = _calculateDistance(
             _userPosition!.latitude,
             _userPosition!.longitude,
@@ -506,52 +511,53 @@ class RecommendedMerchants extends _$RecommendedMerchants {
             merchant.merchantLocLong!,
           );
         }
-        
+
         merchantsWithDistance.add(MerchantWithDistanceHome(
           merchant: merchant,
           distance: distance,
           isGeoEnhanced: isGeoEnhanced,
         ));
       }
-      
+
       merchantsWithDistance.sort((a, b) {
         final popularityA = a.merchant.merchantPopularity ?? 0;
         final popularityB = b.merchant.merchantPopularity ?? 0;
-        
+
         if (popularityA != popularityB) {
           return popularityB.compareTo(popularityA);
         }
-        
+
         if (a.distance == null && b.distance == null) return 0;
         if (a.distance == null) return 1;
         if (b.distance == null) return -1;
-        
+
         return a.distance!.compareTo(b.distance!);
       });
-      
+
       final recommendations = merchantsWithDistance.take(5).toList();
-      
+
       state = AppState.success(recommendations);
-      
     } catch (e) {
-      Logger.error("HOMEVM_GEO - Error fetching recommended merchants", error: e);
-      state = AppState.error(
-        Exception(e.toString()),
-        message: 'Failed to load recommended merchants'
-      );
+      Logger.error("HOMEVM_GEO - Error fetching recommended merchants",
+          error: e);
+      state = AppState.error(Exception(e.toString()),
+          message: 'Failed to load recommended merchants');
     }
   }
 
-  double _calculateDistance(double lat1, double lon1, double lat2, double lon2) {
+  double _calculateDistance(
+      double lat1, double lon1, double lat2, double lon2) {
     const double earthRadius = 6371;
 
     double dLat = _degreesToRadians(lat2 - lat1);
     double dLon = _degreesToRadians(lon2 - lon1);
 
     double a = sin(dLat / 2) * sin(dLat / 2) +
-        cos(_degreesToRadians(lat1)) * cos(_degreesToRadians(lat2)) *
-        sin(dLon / 2) * sin(dLon / 2);
-    
+        cos(_degreesToRadians(lat1)) *
+            cos(_degreesToRadians(lat2)) *
+            sin(dLon / 2) *
+            sin(dLon / 2);
+
     double c = 2 * atan2(sqrt(a), sqrt(1 - a));
     double distance = earthRadius * c;
 
@@ -568,10 +574,9 @@ class RecommendedMerchants extends _$RecommendedMerchants {
       if (!_geoServiceInitialized) {
         return false;
       }
-      
+
       final merchantService = ref.read(merchantServiceProvider);
       return await merchantService.testGeoFunctionality();
-      
     } catch (e) {
       Logger.error("HOMEVM_GEO - Geo test failed", error: e);
       return false;
@@ -582,10 +587,12 @@ class RecommendedMerchants extends _$RecommendedMerchants {
     final merchantService = ref.read(merchantServiceProvider);
     final status = merchantService.getGeoServiceStatus();
     status['recommendationsInitialized'] = _geoServiceInitialized;
-    status['userPosition'] = _userPosition != null ? {
-      'latitude': _userPosition!.latitude,
-      'longitude': _userPosition!.longitude,
-    } : null;
+    status['userPosition'] = _userPosition != null
+        ? {
+            'latitude': _userPosition!.latitude,
+            'longitude': _userPosition!.longitude,
+          }
+        : null;
     return status;
   }
 }
