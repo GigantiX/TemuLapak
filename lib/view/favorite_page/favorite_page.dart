@@ -35,11 +35,11 @@ class _FavoritePageState extends ConsumerState<FavoritePage> {
         title: Text(
           'Favorit',
           style: TextStyle(
-            color: MyColor.white,
+            color: MyColor.blackPlain,
             fontWeight: FontWeight.w600,
           ),
         ),
-        backgroundColor: MyColor.orange,
+        backgroundColor: MyColor.white,
         elevation: 0.5,
         automaticallyImplyLeading: false,
       ),

@@ -23,7 +23,6 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
   Widget build(BuildContext context) {
     final userState = ref.watch(profileViewModelProvider);
     final profileVM = ref.watch(profileViewModelProvider.notifier);
-    final navbarVM = ref.read(navigationViewModelProvider.notifier);
 
     return Scaffold(
       backgroundColor: MyColor.orange,
