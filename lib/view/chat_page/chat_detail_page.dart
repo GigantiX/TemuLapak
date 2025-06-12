@@ -13,10 +13,12 @@ import 'package:temulapak_app/view/chat_page/chat_viewmodel.dart';
 
 class ChatDetailPage extends ConsumerStatefulWidget {
   final String conversationId;
+  final String currentUserPersonaId;
 
   const ChatDetailPage({
     super.key,
     required this.conversationId,
+    required this.currentUserPersonaId,
   });
 
   @override
@@ -25,26 +27,23 @@ class ChatDetailPage extends ConsumerStatefulWidget {
 
 class _ChatDetailPageState extends ConsumerState<ChatDetailPage> {
   late types.User _currentUser;
-  String? _currentUserId;
   bool _isInitialized = false;
 
   @override
   void initState() {
     super.initState();
-    _initializeUser();
+    _initializeUser(widget.currentUserPersonaId);
   }
 
-  void _initializeUser() async {
+  void _initializeUser(String personaId) async {
     try {
       final userService = UserService();
-      final currentUserId = userService.getCurrentUID();
       final currentUserData = await userService.getCurrentUser();
-      
-      if (currentUserId != null && currentUserData != null) {
+
+      if ( currentUserData != null) {
         setState(() {
-          _currentUserId = currentUserId;
           _currentUser = types.User(
-            id: currentUserId,
+            id: personaId,
             firstName: currentUserData.displayName ?? 'User',
             imageUrl: currentUserData.photoURL,
           );
@@ -52,8 +51,9 @@ class _ChatDetailPageState extends ConsumerState<ChatDetailPage> {
         });
 
         Future.delayed(Duration(milliseconds: 500), () {
-          ref.read(chatActionsViewModelProvider.notifier)
-              .markAsRead(widget.conversationId);
+          ref
+              .read(chatActionsViewModelProvider.notifier)
+              .markAsRead(widget.conversationId, personaId);
         });
       }
     } catch (e) {
@@ -63,7 +63,7 @@ class _ChatDetailPageState extends ConsumerState<ChatDetailPage> {
 
   @override
   Widget build(BuildContext context) {
-    if (!_isInitialized || _currentUserId == null) {
+    if (!_isInitialized) {
       return Scaffold(
         backgroundColor: MyColor.whitePlain,
         appBar: AppBar(
@@ -77,8 +77,10 @@ class _ChatDetailPageState extends ConsumerState<ChatDetailPage> {
       );
     }
 
-    final conversationStream = ref.watch(conversationDetailProvider(widget.conversationId));
-    final messagesStream = ref.watch(conversationMessagesProvider(widget.conversationId));
+    final conversationStream =
+        ref.watch(conversationDetailProvider(widget.conversationId));
+    final messagesStream =
+        ref.watch(conversationMessagesProvider(widget.conversationId));
 
     return Scaffold(
       backgroundColor: MyColor.whitePlain,
@@ -96,7 +98,8 @@ class _ChatDetailPageState extends ConsumerState<ChatDetailPage> {
     );
   }
 
-  PreferredSizeWidget _buildAppBar(AsyncValue<ConversationModel?> conversationStream) {
+  PreferredSizeWidget _buildAppBar(
+      AsyncValue<ConversationModel?> conversationStream) {
     return AppBar(
       backgroundColor: Colors.white,
       foregroundColor: MyColor.blackPlain,
@@ -105,8 +108,8 @@ class _ChatDetailPageState extends ConsumerState<ChatDetailPage> {
         data: (conversation) {
           if (conversation != null) {
             final otherParticipant = ChatService.instance
-                .getOtherParticipant(conversation, _currentUserId!);
-            
+                .getOtherParticipant(conversation, widget.currentUserPersonaId);
+
             if (otherParticipant != null) {
               return Row(
                 children: [
@@ -119,8 +122,8 @@ class _ChatDetailPageState extends ConsumerState<ChatDetailPage> {
                         : null,
                     child: otherParticipant.avatar == null
                         ? Icon(
-                            otherParticipant.role == 'merchant' 
-                                ? Icons.store 
+                            otherParticipant.role == 'merchant'
+                                ? Icons.store
                                 : Icons.person,
                             color: Colors.grey[600],
                             size: 18,
@@ -143,7 +146,9 @@ class _ChatDetailPageState extends ConsumerState<ChatDetailPage> {
                           overflow: TextOverflow.ellipsis,
                         ),
                         Text(
-                          otherParticipant.role == 'merchant' ? 'Penjual' : 'Pembeli',
+                          otherParticipant.role == 'merchant'
+                              ? 'Penjual'
+                              : 'Pembeli',
                           style: TextStyle(
                             fontSize: 12,
                             color: Colors.grey[600],
@@ -166,7 +171,8 @@ class _ChatDetailPageState extends ConsumerState<ChatDetailPage> {
 
   Widget _buildChatUI(List<MessageModel> messages) {
     // Convert MessageModel to flutter_chat_ui types
-    final chatMessages = messages.map((msg) => _convertToFlutterChatMessage(msg)).toList();
+    final chatMessages =
+        messages.map((msg) => _convertToFlutterChatMessage(msg)).toList();
 
     return Chat(
       messages: chatMessages,
@@ -180,7 +186,7 @@ class _ChatDetailPageState extends ConsumerState<ChatDetailPage> {
         // FIXED: Remove border radius from input
         inputBorderRadius: BorderRadius.zero,
         messageBorderRadius: 20,
-        
+
         // Message styling
         sentMessageBodyTextStyle: TextStyle(
           color: Colors.white,
@@ -190,10 +196,10 @@ class _ChatDetailPageState extends ConsumerState<ChatDetailPage> {
           color: MyColor.blackPlain,
           fontSize: 16,
         ),
-        
+
         // Remove avatars from messages (only show in AppBar)
         userAvatarNameColors: [],
-        
+
         // Input styling
         inputTextStyle: TextStyle(
           fontSize: 16,
@@ -204,7 +210,7 @@ class _ChatDetailPageState extends ConsumerState<ChatDetailPage> {
           color: Colors.white,
           border: Border.all(color: Colors.transparent),
         ),
-        
+
         // FIXED: Orange send button with white icon
         sendButtonIcon: Container(
           width: 44,
@@ -219,22 +225,22 @@ class _ChatDetailPageState extends ConsumerState<ChatDetailPage> {
             size: 20,
           ),
         ),
-        
+
         // Input padding
         inputPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         inputMargin: EdgeInsets.all(0),
       ),
-      
+
       // Input options - Updated for v1.6.15
       l10n: const ChatL10nEn(
         inputPlaceholder: 'Ketik pesan...',
         emptyChatPlaceholder: 'Belum ada pesan',
       ),
-      
+
       // Disable avatars in messages (as requested)
       showUserAvatars: false,
       showUserNames: false,
-      
+
       // Empty state
       emptyState: Container(
         padding: EdgeInsets.all(32),
@@ -279,8 +285,8 @@ class _ChatDetailPageState extends ConsumerState<ChatDetailPage> {
       createdAt: message.timestamp.millisecondsSinceEpoch,
       id: message.id,
       text: message.text,
-      status: message.readBy.contains(_currentUserId) 
-          ? types.Status.seen 
+      status: message.readBy.contains(widget.currentUserPersonaId)
+          ? types.Status.seen
           : types.Status.delivered,
     );
   }
@@ -297,7 +303,7 @@ class _ChatDetailPageState extends ConsumerState<ChatDetailPage> {
 
   void _handleSendPressed(types.PartialText message) async {
     final text = message.text.trim();
-    
+
     if (text.isEmpty) {
       return;
     }
@@ -309,13 +315,14 @@ class _ChatDetailPageState extends ConsumerState<ChatDetailPage> {
     }
 
     try {
-      Logger.log("CHAT_DETAIL - Sending message: ${text.substring(0, math.min(20, text.length))}...");
-      
-      await ref.read(chatActionsViewModelProvider.notifier)
+      Logger.log(
+          "CHAT_DETAIL - Sending message: ${text.substring(0, math.min(20, text.length))}...");
+
+      await ref
+          .read(chatActionsViewModelProvider.notifier)
           .sendMessage(widget.conversationId, text);
-      
+
       Logger.log("CHAT_DETAIL - Message sent successfully");
-      
     } catch (e) {
       Logger.error("CHAT_DETAIL - Error sending message", error: e);
       _showErrorSnackBar('Gagal mengirim pesan');
@@ -355,7 +362,9 @@ class _ChatDetailPageState extends ConsumerState<ChatDetailPage> {
             SizedBox(height: 24),
             ElevatedButton.icon(
               onPressed: () {
-                ref.read(chatActionsViewModelProvider.notifier).navigateBack(context);
+                ref
+                    .read(chatActionsViewModelProvider.notifier)
+                    .navigateBack(context);
               },
               icon: Icon(Icons.arrow_back),
               label: Text('Kembali'),

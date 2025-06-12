@@ -416,7 +416,7 @@ class UserChatListView extends ConsumerWidget {
             Logger.log("Opening chat detail: ${conversation.id}");
             ref
                 .read(chatActionsViewModelProvider.notifier)
-                .navigateToChatDetail(conversation.id, context);
+                .navigateToChatDetail(conversation.id, userId, context);
           },
         );
       },
@@ -637,7 +637,7 @@ class MerchantChatListView extends ConsumerWidget {
             Logger.log("Opening merchant chat detail: ${conversation.id}");
             ref
                 .read(chatActionsViewModelProvider.notifier)
-                .navigateToChatDetail(conversation.id, context);
+                .navigateToChatDetail(conversation.id, merchantId, context);
           },
         );
       },

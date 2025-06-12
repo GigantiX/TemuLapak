@@ -655,7 +655,7 @@ class _ConversationMessagesProviderElement
 }
 
 String _$chatActionsViewModelHash() =>
-    r'3db51333ee314a039302a31ab75d11d1a98dcffb';
+    r'6b7d2ac1ae19c8254f25a11932858563686d7d4b';
 
 /// See also [ChatActionsViewModel].
 @ProviderFor(ChatActionsViewModel)

@@ -34,7 +34,7 @@ class NotificationService {
   static const String _fallbackUrl = 'http://10.0.2.2:3000'; // Android emulator local
 
   // Callback for handling notification taps
-  Function(String conversationId)? onNotificationTap;
+  Function(Map<String, String?> payload)? onNotificationTap;
 
   /// Get notification server URL from Firestore with caching
   Future<String> _getServerUrl() async {
@@ -147,9 +147,15 @@ class NotificationService {
   void _onNotificationTapped(NotificationResponse response) {
     Logger.log("NOTIFICATION_SERVICE - Notification tapped: ${response.payload}");
     
-    if (response.payload != null) {
-      final conversationId = response.payload!;
-      onNotificationTap?.call(conversationId);
+    if (response.payload != null && response.payload!.isNotEmpty) {
+      try {
+        final Map<String, dynamic> payloadMap = jsonDecode(response.payload!);
+        // Cast to the correct type for the callback
+        final Map<String, String?> stringPayload = payloadMap.map((key, value) => MapEntry(key, value?.toString()));
+        onNotificationTap?.call(stringPayload);
+      } catch (e) {
+        Logger.error("NOTIFICATION_SERVICE - Error decoding notification payload", error: e);
+      }
     }
   }
 
@@ -223,13 +229,18 @@ class NotificationService {
     Logger.log("NOTIFICATION_SERVICE - Received foreground message: ${message.notification?.title}");
 
     if (message.notification != null) {
+      // Create a JSON payload
+      final payloadData = {
+        'conversationId': message.data['conversationId'],
+        'receiverId': message.data['receiverId'],
+      };
+
       await _showLocalNotification(
         title: message.notification!.title ?? 'TemuLapak',
         body: message.notification!.body ?? '',
-        payload: message.data['conversationId'] ?? '',
+        payload: jsonEncode(payloadData), // Encode the map to a JSON string
       );
 
-      // Save notification to Firestore
       await _saveNotificationToFirestore(message);
     }
   }
@@ -238,10 +249,11 @@ class NotificationService {
   void _handleBackgroundMessageTap(RemoteMessage message) {
     Logger.log("NOTIFICATION_SERVICE - Background message tapped");
     
-    final conversationId = message.data['conversationId'];
-    if (conversationId != null) {
-      onNotificationTap?.call(conversationId);
-    }
+    final payload = {
+      'conversationId': message.data['conversationId']?.toString(),
+      'receiverId': message.data['receiverId']?.toString(),
+    };
+    onNotificationTap?.call(payload);
   }
 
   /// Show local notification

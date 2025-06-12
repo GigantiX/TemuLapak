@@ -93,7 +93,7 @@ final geoMerchantServiceProvider =
 // ignore: unused_element
 typedef GeoMerchantServiceRef = AutoDisposeProviderRef<GeoMerchantService>;
 String _$enhancedHomeStateNotifierHash() =>
-    r'dd758ba5f3f3b5c6bfa613a36761af887c2f7565';
+    r'68d3ed26bc5335c5aec4bdc331b0a64bd64e5c96';
 
 /// See also [EnhancedHomeStateNotifier].
 @ProviderFor(EnhancedHomeStateNotifier)
@@ -125,7 +125,7 @@ final homeViewmodelProvider = AutoDisposeNotifierProvider<HomeViewmodel,
 );
 
 typedef _$HomeViewmodel = AutoDisposeNotifier<AppState<UserModel, Exception>>;
-String _$addressViewModelHash() => r'a78f6cf8d68c17e89a3276341da49fb13db00c01';
+String _$addressViewModelHash() => r'7dfdc99a21375608b3fe10023498090f8f822dba';
 
 /// See also [AddressViewModel].
 @ProviderFor(AddressViewModel)
