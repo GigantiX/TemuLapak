@@ -45,28 +45,34 @@ Future<void> _initializeNotifications() async {
 
     final notificationService = NotificationService.instance;
 
-    // Setup notification tap callback
-    notificationService.onNotificationTap = (conversationId) {
-      Logger.log(
-          "MAIN - Notification tapped, opening conversation: $conversationId");
+    notificationService.onNotificationTap = (payload) {
+      Logger.log("MAIN - Notification tapped, payload: $payload");
 
-      // Navigate to chat detail page
-      final context = navigatorKey.currentContext;
-      if (context != null) {
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(
-            builder: (context) =>
-                ChatDetailPage(conversationId: conversationId),
-          ),
-          (route) => route.settings.name == '/navigation' || route.isFirst,
-        );
+      final conversationId = payload['conversationId'];
+      final currentUserPersonaId = payload['receiverId'];
+
+      if (conversationId != null && currentUserPersonaId != null) {
+        Logger.log("MAIN - Navigating to conversation: $conversationId as persona: $currentUserPersonaId");
+        
+        final context = navigatorKey.currentContext;
+        if (context != null) {
+          // Navigate to ChatDetailPage with BOTH required parameters
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => ChatDetailPage(
+                conversationId: conversationId,
+                currentUserPersonaId: currentUserPersonaId,
+              ),
+            ),
+          );
+        }
+      } else {
+        Logger.error("MAIN - Notification payload is missing required data.");
       }
     };
 
     await notificationService.initialize();
-
-    // Pre-fetch server URL on app start
     await notificationService.prefetchServerUrl();
 
     Logger.log("MAIN - Notification service initialized successfully");
@@ -74,6 +80,7 @@ Future<void> _initializeNotifications() async {
     Logger.error("MAIN - Error initializing notification service", error: e);
   }
 }
+
 
 class MyApp extends ConsumerWidget {
   const MyApp({super.key});
