@@ -67,7 +67,7 @@ class NotificationPage extends ConsumerWidget {
                 "NOTIFICATION_PAGE - Notification tapped: ${notification.conversationId}");
             ref
                 .read(notificationActionsViewModelProvider.notifier)
-                .navigateToChatDetail(context, notification.conversationId);
+                .navigateToChatDetail(context, notification.conversationId, notification.receiverId);
           },
         );
       },

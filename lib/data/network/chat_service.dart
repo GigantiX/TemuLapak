@@ -340,78 +340,22 @@ class ChatService {
     });
   }
 
-  /// FIXED: Mark messages as read with proper participant detection
-  Future<void> markAsRead(String conversationId, String userId) async {
+  Future<void> markAsRead(String conversationId, String readerPersonaId) async {
     try {
-      Logger.log("CHAT_SERVICE - Marking as read: $conversationId for $userId");
+      Logger.log("CHAT_SERVICE - Marking as read: $conversationId for persona: $readerPersonaId");
       
-      // FIXED: Get conversation first to determine correct user ID
-      final conversationDoc = await _firestore
-          .collection('conversations')
-          .doc(conversationId)
-          .get();
-      
-      if (!conversationDoc.exists) {
-        Logger.error("CHAT_SERVICE - Conversation not found: $conversationId");
-        return;
-      }
-      
-      final conversationData = conversationDoc.data()!;
-      final participants = List<String>.from(conversationData['participants'] ?? []);
-      
-      // FIXED: Determine the correct participant ID to reset unread count
-      String? participantToUpdate;
-      
-      // Check if userId is directly in participants (for users)
-      if (participants.contains(userId)) {
-        participantToUpdate = userId;
-        Logger.log("CHAT_SERVICE - Direct participant match: $userId");
-      } else {
-        // For merchants, find the merchant ID in participants
-        for (final participant in participants) {
-          if (participant.startsWith('MRCN_') && participant.contains(userId.replaceFirst('MRCN_', ''))) {
-            participantToUpdate = participant;
-            Logger.log("CHAT_SERVICE - Merchant participant match: $participant for $userId");
-            break;
-          }
-        }
-        
-        // If still not found, try exact match with MRCN_ prefix
-        if (participantToUpdate == null && !userId.startsWith('MRCN_')) {
-          final merchantId = "MRCN_$userId";
-          if (participants.contains(merchantId)) {
-            participantToUpdate = merchantId;
-            Logger.log("CHAT_SERVICE - Constructed merchant ID match: $merchantId");
-          }
-        }
-        
-        // Last resort: use userId as is if it starts with MRCN_
-        if (participantToUpdate == null && userId.startsWith('MRCN_')) {
-          if (participants.contains(userId)) {
-            participantToUpdate = userId;
-            Logger.log("CHAT_SERVICE - Direct MRCN_ match: $userId");
-          }
-        }
-      }
-      
-      if (participantToUpdate == null) {
-        Logger.error("CHAT_SERVICE - Could not determine participant to update for $userId in $participants");
-        return;
-      }
-      
-      // FIXED: Update unread count for correct participant
       await _firestore
           .collection('conversations')
           .doc(conversationId)
           .update({
-        'unreadCount.$participantToUpdate': 0,
+        'unreadCount.$readerPersonaId': 0,
       });
       
-      Logger.log("CHAT_SERVICE - Successfully marked as read for participant: $participantToUpdate");
+      Logger.log("CHAT_SERVICE - Successfully marked as read for participant: $readerPersonaId");
       
     } catch (e) {
       Logger.error("CHAT_SERVICE - Error marking as read", error: e);
-      rethrow;
+      // Don't rethrow, this is not a critical failure for the user.
     }
   }
 
