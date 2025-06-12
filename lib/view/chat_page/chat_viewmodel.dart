@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:temulapak_app/data/network/chat_service.dart';
 import 'package:temulapak_app/data/network/user_service.dart';
-import 'package:temulapak_app/main.dart';
 import 'package:temulapak_app/model/chat/conversation_model.dart';
 import 'package:temulapak_app/model/chat/message_model.dart';
 import 'package:temulapak_app/model/merchant/merchant_model.dart';
@@ -130,34 +129,28 @@ class ChatActionsViewModel extends _$ChatActionsViewModel {
   }
 
   /// Mark conversation as read
-  Future<void> markAsRead(String conversationId) async {
-    try {
-      Logger.log("CHAT_ACTIONS_VM - Marking as read: $conversationId");
-      
-      final userService = ref.read(userServiceChatProvider);
-      final currentUserId = userService.getCurrentUID();
-      
-      if (currentUserId == null) {
-        throw Exception("User not authenticated");
-      }
-      
-      final chatService = ref.read(chatServiceProvider);
-      await chatService.markAsRead(conversationId, currentUserId);
-      
-      Logger.log("CHAT_ACTIONS_VM - Marked as read successfully");
-      
-    } catch (e) {
-      Logger.error("CHAT_ACTIONS_VM - Error marking as read", error: e);
-      // Don't show error to user for read status
-    }
+  Future<void> markAsRead(String conversationId, String personaId) async {
+  try {
+    Logger.log("CHAT_ACTIONS_VM - Marking as read: $conversationId for persona $personaId");
+    
+    final chatService = ref.read(chatServiceProvider);
+    await chatService.markAsRead(conversationId, personaId);
+    
+    Logger.log("CHAT_ACTIONS_VM - Marked as read successfully");
+    
+  } catch (e) {
+    Logger.error("CHAT_ACTIONS_VM - Error marking as read", error: e);
+    // Don't show error to user for read status
   }
+}
 
-  void navigateToChatDetail(String conversationId, BuildContext context) {
+  void navigateToChatDetail(String conversationId, String personaId, BuildContext context) {
      Navigator.push(
         context,
         MaterialPageRoute(
           builder: (context) => ChatDetailPage(
             conversationId: conversationId,
+            currentUserPersonaId: personaId,
           ),
         ),
       );

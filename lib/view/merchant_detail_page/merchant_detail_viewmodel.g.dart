@@ -181,7 +181,7 @@ class _MerchantLiveStreamProviderElement
 }
 
 String _$enhancedMerchantDetailStateNotifierHash() =>
-    r'33c67aa71956c9dd6c2a0a4b03e36aa9e71139a0';
+    r'3993c7ff19bfa8209b2348e6221aab6f19e1c523';
 
 /// See also [EnhancedMerchantDetailStateNotifier].
 @ProviderFor(EnhancedMerchantDetailStateNotifier)

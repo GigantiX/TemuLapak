@@ -66,7 +66,7 @@ class NotificationActionsViewModel extends _$NotificationActionsViewModel {
     }
   }
 
-  void navigateToChatDetail(BuildContext context, String conversationId) {
+  void navigateToChatDetail(BuildContext context, String conversationId, String currentUserPersonaId) {
     Logger.log("NOTIFICATION_ACTIONS_VM - Navigating to chat detail: $conversationId");
     
     Navigator.push(
@@ -74,6 +74,7 @@ class NotificationActionsViewModel extends _$NotificationActionsViewModel {
               MaterialPageRoute(
                 builder: (context) => ChatDetailPage(
                   conversationId: conversationId,
+                  currentUserPersonaId: currentUserPersonaId,
                 ),
               ),
             );

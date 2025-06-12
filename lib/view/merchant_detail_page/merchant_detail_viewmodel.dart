@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:temulapak_app/data/network/user_service.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:temulapak_app/data/location/location_service.dart';
 import 'package:temulapak_app/model/merchant/merchant_model.dart';
@@ -516,19 +517,29 @@ class EnhancedMerchantDetailStateNotifier extends _$EnhancedMerchantDetailStateN
     try {
       Logger.log("ENHANCED_VM - Starting chat with: ${state.lastKnownMerchant!.merchantName}");
       
-      final conversationId = await ref.read(chatActionsViewModelProvider.notifier)
-          .startChat(state.lastKnownMerchant!);
+      final userService = UserService(); // Get an instance of the user service.
+      final currentUserId = userService.getCurrentUID(); // Get the raw UID of the logged-in user.
+
+      if (currentUserId == null) {
+        _emitCommand(const ShowSnackbarCommand("Silakan login untuk memulai chat", Colors.red, 3));
+        throw Exception("User not authenticated");
+      }
+      
+      final chatService = ref.read(chatServiceProvider);
+      
+      final conversationId = await chatService.getOrCreateConversation(
+          currentUserId, // Use the raw UID for the user
+          "MRCN_${state.lastKnownMerchant!.uid}", 
+          state.lastKnownMerchant!);
       
       if (conversationId != null) {
-        _emitCommand(NavigateCommand(ChatDetailPage(conversationId: conversationId)));
+        // Pass the raw user ID as the persona for the ChatDetailPage
+        _emitCommand(NavigateCommand(ChatDetailPage(
+            conversationId: conversationId, 
+            currentUserPersonaId: currentUserId // Pass the raw user ID
+        )));
         
         Logger.log("ENHANCED_VM - Chat opened successfully: $conversationId");
-        
-        _emitCommand(ShowSnackbarCommand(
-          "Chat dengan ${state.lastKnownMerchant!.merchantName} dimulai", 
-          Colors.green,
-          2,
-        ));
       } else {
         _emitCommand(ShowSnackbarCommand(
           "Gagal memulai chat dengan ${state.lastKnownMerchant!.merchantName}", 
@@ -539,20 +550,7 @@ class EnhancedMerchantDetailStateNotifier extends _$EnhancedMerchantDetailStateN
       
     } catch (e) {
       Logger.error("ENHANCED_VM - Error starting chat", error: e);
-      
-      if (e.toString().contains('authenticated')) {
-        _emitCommand(ShowSnackbarCommand(
-          "Silakan login terlebih dahulu untuk memulai chat", 
-          Colors.red,
-          3,
-        ));
-      } else {
-        _emitCommand(ShowSnackbarCommand(
-          "Gagal memulai chat. Silakan coba lagi.", 
-          Colors.red,
-          3,
-        ));
-      }
+      _emitCommand(const ShowSnackbarCommand("Gagal memulai chat. Silakan coba lagi.", Colors.red, 3));
     }
   }
 
