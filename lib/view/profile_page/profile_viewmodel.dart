@@ -6,7 +6,7 @@ import 'package:temulapak_app/data/network/user_service.dart';
 import 'package:temulapak_app/model/state/app_state.dart';
 import 'package:temulapak_app/model/user/user_model.dart';
 import 'package:temulapak_app/utils/logger.dart';
-import 'package:temulapak_app/utils/loading/loading.dart';
+import 'package:temulapak_app/view/chat_page/chat_viewmodel.dart';
 import 'package:temulapak_app/view/help_centre_page/help_center_page.dart';
 import 'package:temulapak_app/view/login_page/login_viewmodel.dart';
 import 'package:temulapak_app/view/merchant_dashboard_page/merchant_dashboard_page.dart';
@@ -85,53 +85,44 @@ class ProfileViewModel extends StateNotifier<AppState<UserModel, Exception>> {
 
   Future<void> navigateToMerchant(BuildContext context) async {
     Logger.log("PROFILEVM - Tapped on Merchant Page");
-    Loading.show(context);
+    final user = state.data;
+    
+    if (user == null) {
+      Logger.error("PROFILEVM - User data not available");
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Tidak dapat mengakses halaman merchant, data pengguna tidak ditemukan.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
 
-    state.maybeWhen(
-      success: (user) {
-        if (user.isMerchant == true) {
-          Logger.log(
-              "PROFILEVM - User is a merchant, navigating to MerchantDashboardPage");
-          Future.delayed(Duration(milliseconds: 100), () {
-            if (!context.mounted) return;
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => MerchantDashboardPage(),
-              ),
-            ).then((_) {
-              Loading.hide();
-            });
-          });
-        } else {
-          Loading.hide();
-          Logger.log(
-              "PROFILEVM - User is not a merchant, navigating to RegisterMerchantPage");
-          Future.delayed(Duration(milliseconds: 100), () {
-            if (!context.mounted) return;
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => RegisterMerchantPage(),
-              ),
-            ).then((_) {});
-          });
-        }
-      },
-      orElse: () {
-        Logger.error("PROFILEVM - User data not available");
-        Future.delayed(Duration(milliseconds: 100), () {
-          Loading.hide();
-          if (!context.mounted) return;
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Unable to access merchant page'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        });
-      },
-    );
+    if (user.isMerchant == true) {
+      Logger.log("PROFILEVM - User is a merchant, navigating to MerchantDashboardPage");
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => const MerchantDashboardPage(),
+        ),
+      );
+    } else {
+      Logger.log("PROFILEVM - User is not a merchant, navigating to RegisterMerchantPage");
+      
+      final result = await Navigator.push<bool>(
+        context,
+        MaterialPageRoute(
+          builder: (context) => const RegisterMerchantPage(),
+        ),
+      );
+
+      if (result == true) {
+        Logger.log("PROFILEVM - Returned from merchant registration, refreshing profile...");
+        _ref.invalidate(chatListViewModelProvider);
+        await refreshProfile();
+      }
+    }
   }
 
   Future<bool> signOut() async {
