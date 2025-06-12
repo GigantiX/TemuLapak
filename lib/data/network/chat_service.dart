@@ -132,13 +132,12 @@ class ChatService {
           .map((doc) {
             try {
               final conversation = ConversationModel.fromMap(doc.data());
-              
-              // FIXED: Filter by role after fetching - check if user is participating as 'user' role
               final userDetail = conversation.participantDetails[userId];
+              
               if (userDetail != null && userDetail.role == 'user') {
                 return conversation;
               }
-              return null; // Skip this conversation if user is not participating as 'user'
+              return null;
               
             } catch (e) {
               Logger.error("CHAT_SERVICE - Error parsing conversation ${doc.id}", error: e);
