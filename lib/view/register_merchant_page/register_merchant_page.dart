@@ -10,6 +10,7 @@ import 'package:temulapak_app/model/product/product_model.dart';
 import 'package:temulapak_app/model/state/app_state.dart';
 import 'package:temulapak_app/utils/loading/loading.dart';
 import 'package:temulapak_app/utils/logger.dart';
+import 'package:temulapak_app/utils/network_checker.dart';
 import 'package:temulapak_app/view/register_merchant_page/register_merchant_viewmodel.dart';
 import 'package:temulapak_app/view/widget/map_picker/map_picker_dialog.dart';
 
@@ -185,24 +186,28 @@ class _RegisterMerchantPageState extends ConsumerState<RegisterMerchantPage> {
             Logger.log("Register Merchant Button Pressed");
 
             if (_formKey.currentState!.validate()) {
-              // --- View's only job is to collect raw data ---
-              final imageState = ref.read(pickImageViewModelProvider);
-              final File? imageFile = imageState.maybeWhen(
-                success: (file) => file,
-                orElse: () => null,
-              );
+              await NetworkChecker.instance.run(
+              context: context,
+              action: () async {
+                final imageState = ref.read(pickImageViewModelProvider);
+                final File? imageFile = imageState.maybeWhen(
+                  success: (file) => file,
+                  orElse: () => null,
+                );
 
-              // --- Delegate all logic to the ViewModel ---
-              await ref
-                  .read(registerMerchantViewModelProvider.notifier)
-                  .registerMerchant(
-                    name: _nameController.text,
-                    description: _descController.text,
-                    categories: _selectedCategories,
-                    productFields: _productFields,
-                    location: _selectedLocation,
-                    imageFile: imageFile != null ? XFile(imageFile.path) : null,
-                  );
+                await ref
+                    .read(registerMerchantViewModelProvider.notifier)
+                    .registerMerchant(
+                      name: _nameController.text,
+                      description: _descController.text,
+                      categories: _selectedCategories,
+                      productFields: _productFields,
+                      location: _selectedLocation,
+                      imageFile: imageFile != null ? XFile(imageFile.path) : null,
+                    );
+                return true;
+              },
+            );
             } else {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
