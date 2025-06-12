@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:temulapak_app/assets/mycolor.dart';
 import 'package:temulapak_app/utils/custom_dialog.dart';
 import 'package:temulapak_app/utils/loading/loading.dart';
+import 'package:temulapak_app/utils/network_checker.dart';
 import 'package:temulapak_app/view/login_page/login_page.dart';
 import 'package:temulapak_app/view/navigation_page/navigation_viewmodel.dart';
 import 'package:temulapak_app/view/profile_page/profile_viewmodel.dart';
@@ -40,30 +41,35 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
       if (confirmed == true) {
         if (!context.mounted) return;
 
-        Loading.show(context);
-        
-        final success = await ref.read(profileViewModelProvider.notifier).signOut();
+        NetworkChecker.instance.run(
+          context: context,
+          action: () async {
+            // This logic will only run if the device is ONLINE.
+            Loading.show(context);
+            final success = await ref.read(profileViewModelProvider.notifier).signOut();
+            Loading.hide();
 
-        Loading.hide();
+            if (success && context.mounted) {
+              ref.invalidate(profileViewModelProvider);
+              ref.read(navigationViewModelProvider.notifier).resetToHome();
 
-        if (success && context.mounted) {
-          // Invalidate the providers from the UI layer AFTER the logic is done.
-          ref.invalidate(profileViewModelProvider);
-          ref.read(navigationViewModelProvider.notifier).resetToHome();
-
-          Navigator.pushAndRemoveUntil(
-            context,
-            MaterialPageRoute(builder: (context) => const LoginPage()),
-            (route) => false,
-          );
-        } else if (!success && context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Gagal keluar. Periksa koneksi internet Anda.'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
+              Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(builder: (context) => const LoginPage()),
+                (route) => false,
+              );
+            } else if (!success && context.mounted) {
+              // This block now catches non-network related sign-out errors.
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Gagal keluar, terjadi kesalahan tak terduga.'),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            }
+            return success;
+          },
+        );
       }
     });
   }

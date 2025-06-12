@@ -169,7 +169,9 @@ class _MerchantDashboardPageState extends ConsumerState<MerchantDashboardPage> {
           top: 8,
           left: 16,
           child: GestureDetector(
-            onTap: () => ref.read(merchantDashboardViewmodelProvider.notifier).navigateBack(context),
+            onTap: () => ref
+                .read(merchantDashboardViewmodelProvider.notifier)
+                .navigateBack(context),
             child: Container(
               width: 46,
               height: 46,
@@ -258,7 +260,9 @@ class _MerchantDashboardPageState extends ConsumerState<MerchantDashboardPage> {
           top: 8,
           left: 16,
           child: GestureDetector(
-            onTap: () => ref.read(merchantDashboardViewmodelProvider.notifier).navigateBack(context),
+            onTap: () => ref
+                .read(merchantDashboardViewmodelProvider.notifier)
+                .navigateBack(context),
             child: Container(
               width: 46,
               height: 46,
@@ -340,7 +344,9 @@ class _MerchantDashboardPageState extends ConsumerState<MerchantDashboardPage> {
           top: 8,
           left: 16,
           child: GestureDetector(
-            onTap: () => ref.read(merchantDashboardViewmodelProvider.notifier).navigateBack(context),
+            onTap: () => ref
+                .read(merchantDashboardViewmodelProvider.notifier)
+                .navigateBack(context),
             child: Container(
               width: 46,
               height: 46,
@@ -456,42 +462,10 @@ class _MerchantDashboardPageState extends ConsumerState<MerchantDashboardPage> {
           // Status Toggle
           Switch(
             value: merchant.merchantStatus,
-            onChanged: (value) async {
-              Logger.log("Toggling merchant status to: $value");
-
-              // Show loading for status update
-              Loading.show(context);
-
-              try {
-                await ref
-                    .read(merchantDashboardViewmodelProvider.notifier)
-                    .updateMerchantStatus(value);
-
-                Loading.hide();
-
-                // Show success message
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(value ? 'Toko dibuka' : 'Toko ditutup'),
-                      backgroundColor: Colors.green,
-                      duration: Duration(seconds: 2),
-                    ),
-                  );
-                }
-              } catch (e) {
-                Loading.hide();
-
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Gagal mengubah status toko'),
-                      backgroundColor: Colors.red,
-                      duration: Duration(seconds: 2),
-                    ),
-                  );
-                }
-              }
+            onChanged: (newStatus) async {
+              ref
+                  .read(merchantDashboardViewmodelProvider.notifier)
+                  .updateMerchantStatus(context, newStatus);
             },
             activeColor: MyColor.orange,
           ),
@@ -622,9 +596,9 @@ class _MerchantDashboardPageState extends ConsumerState<MerchantDashboardPage> {
               Loading.hide();
 
               if (mounted) {
-                ref.read(merchantDashboardViewmodelProvider.notifier).navigateToEditMerchant(
-                      context
-                    );
+                ref
+                    .read(merchantDashboardViewmodelProvider.notifier)
+                    .navigateToEditMerchant(context);
               }
             });
           },

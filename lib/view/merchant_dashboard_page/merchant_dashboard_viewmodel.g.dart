@@ -7,7 +7,7 @@ part of 'merchant_dashboard_viewmodel.dart';
 // **************************************************************************
 
 String _$merchantDashboardViewmodelHash() =>
-    r'd997cf8f5256a3ef35bcb170bb5c03ece9fbe11f';
+    r'4cca28776b5a6ee1590f442c34e2c6b0a7eac8c5';
 
 /// See also [MerchantDashboardViewmodel].
 @ProviderFor(MerchantDashboardViewmodel)

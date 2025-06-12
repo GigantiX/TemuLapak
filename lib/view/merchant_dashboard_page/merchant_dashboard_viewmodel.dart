@@ -6,6 +6,7 @@ import 'package:temulapak_app/data/network/merchant_service.dart';
 import 'package:temulapak_app/model/merchant/merchant_model.dart';
 import 'package:temulapak_app/model/state/app_state.dart';
 import 'package:temulapak_app/utils/logger.dart';
+import 'package:temulapak_app/utils/network_checker.dart';
 import 'package:temulapak_app/view/edit_merchant_profile_page/edit_merchant_profile_page.dart';
 
 part 'merchant_dashboard_viewmodel.g.dart';
@@ -56,22 +57,48 @@ class MerchantDashboardViewmodel extends _$MerchantDashboardViewmodel {
     }
   }
 
-  Future<void> updateMerchantStatus(bool isOpen) async {
+  Future<void> updateMerchantStatus(BuildContext context, bool newStatus) async {
+    final isConnected = await NetworkChecker.instance.isConnected();
+    if (!isConnected) {
+      NetworkChecker.instance.showNoConnectionMessage(context);
+      return; // Stop execution if offline
+    }
+
+    final originalMerchant = state.data;
+    if (originalMerchant == null) return; // Safety check
+
+    // Immediately update the UI to feel responsive
+    state = AppState.success(originalMerchant.copyWith(merchantStatus: newStatus));
+
+    //Perform the network call and handle success or failure
     try {
-      Logger.log("VM - Updating merchant status to: $isOpen");
-
-      await _merchantService.updateMerchantStatus(isOpen);
-
-      final currentState = state;
-      if (currentState.isSuccess && currentState.data != null) {
-        final updatedMerchant =
-            currentState.data!.copyWith(merchantStatus: isOpen);
-        state = AppState.success(updatedMerchant);
-        Logger.log("VM - Merchant status updated successfully");
+      await _merchantService.updateMerchantStatus(newStatus);
+      Logger.log("VM - Merchant status updated successfully on server");
+      // On success, show a confirmation message
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(newStatus ? 'Toko berhasil dibuka' : 'Toko berhasil ditutup'),
+            backgroundColor: Colors.green,
+            duration: const Duration(seconds: 2),
+          ),
+        );
       }
     } catch (e) {
-      Logger.error("VM - Error updating merchant status", error: e);
-      rethrow;
+      Logger.error("VM - Error updating merchant status, reverting UI", error: e);
+      
+      //REVERT UI STATE ON FAILURE
+      state = AppState.success(originalMerchant);
+      
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Gagal mengubah status. Periksa koneksi Anda.'),
+            backgroundColor: Colors.red,
+            duration: Duration(seconds: 3),
+          ),
+        );
+      }
     }
   }
 
