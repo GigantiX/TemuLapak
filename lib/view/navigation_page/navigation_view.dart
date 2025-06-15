@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_nav_bar/google_nav_bar.dart';
 import 'package:temulapak_app/assets/mycolor.dart';
-import 'package:temulapak_app/view/chat_page/chat_page.dart';
-import 'package:temulapak_app/view/favorite_page/favorite_page.dart';
-import 'package:temulapak_app/view/home_page/home_page.dart';
+import 'package:temulapak_app/view/chat_page/chat_view.dart';
+import 'package:temulapak_app/view/favorite_page/favorite_view.dart';
+import 'package:temulapak_app/view/home_page/home_view.dart';
 import 'package:temulapak_app/view/navigation_page/navigation_viewmodel.dart';
-import 'package:temulapak_app/view/profile_page/profile_page.dart';
+import 'package:temulapak_app/view/profile_page/profile_view.dart';
 
 class NavigationPage extends ConsumerWidget {
   const NavigationPage({super.key});

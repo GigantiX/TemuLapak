@@ -404,6 +404,16 @@ class _EditMerchantProfilePageState
     final screenWidth = MediaQuery.of(context).size.width;
     final isTablet = screenWidth > 600;
 
+    ref.listen<AppState<File?, Exception>>(editPickImageViewModelProvider,
+        (previous, next) {
+      if (mounted) {
+        next.maybeWhen(
+            success: (_) => _onFieldChanged(),
+            error: (_, __) => _onFieldChanged(),
+            orElse: () {});
+      }
+    });
+
     return Scaffold(
       backgroundColor: MyColor.whitePlain,
       body: merchantState.when(
@@ -834,7 +844,8 @@ class _EditMerchantProfilePageState
               ),
               child: Text(
                 imageState.maybeWhen(
-                  success: (file) => file != null ? 'Akan diperbarui' : 'Tetap sama',
+                  success: (file) =>
+                      file != null ? 'Akan diperbarui' : 'Tetap sama',
                   orElse: () => 'Tetap sama',
                 ),
                 style: TextStyle(
@@ -1007,7 +1018,8 @@ class _EditMerchantProfilePageState
   }
 
   Widget _buildCurrentImage(MerchantModel merchant, bool isTablet) {
-    if (merchant.merchantImgUrl != null && merchant.merchantImgUrl!.isNotEmpty) {
+    if (merchant.merchantImgUrl != null &&
+        merchant.merchantImgUrl!.isNotEmpty) {
       return Image.network(
         merchant.merchantImgUrl!,
         fit: BoxFit.cover,

@@ -7,15 +7,15 @@ import 'package:intl/intl.dart';
 import 'package:temulapak_app/data/local/hive_service.dart';
 import 'package:temulapak_app/data/network/notification_service.dart';
 import 'package:temulapak_app/utils/logger.dart';
-import 'package:temulapak_app/view/chat_page/chat_detail_page.dart';
-import 'package:temulapak_app/view/chat_page/chat_page.dart';
-import 'package:temulapak_app/view/favorite_page/favorite_page.dart';
-import 'package:temulapak_app/view/home_page/home_page.dart';
-import 'package:temulapak_app/view/login_page/login_page.dart';
+import 'package:temulapak_app/view/chat_page/chat_detail_view.dart';
+import 'package:temulapak_app/view/chat_page/chat_view.dart';
+import 'package:temulapak_app/view/favorite_page/favorite_view.dart';
+import 'package:temulapak_app/view/home_page/home_view.dart';
+import 'package:temulapak_app/view/login_page/login_view.dart';
 import 'package:temulapak_app/view/login_page/login_viewmodel.dart';
 import 'package:temulapak_app/view/merchant_dashboard_page/lifecycle_handler/merchant_lifecycle_handler.dart';
-import 'package:temulapak_app/view/navigation_page/navigation_page.dart';
-import 'package:temulapak_app/view/profile_page/profile_page.dart';
+import 'package:temulapak_app/view/navigation_page/navigation_view.dart';
+import 'package:temulapak_app/view/profile_page/profile_view.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 

@@ -11,7 +11,7 @@ import 'package:temulapak_app/utils/loading/loading.dart';
 import 'package:temulapak_app/utils/logger.dart';
 import 'package:temulapak_app/utils/network_checker.dart';
 import 'package:temulapak_app/view/login_page/login_viewmodel.dart';
-import 'package:temulapak_app/view/navigation_page/navigation_page.dart';
+import 'package:temulapak_app/view/navigation_page/navigation_view.dart';
 
 class LoginPage extends ConsumerWidget {
   const LoginPage({super.key});

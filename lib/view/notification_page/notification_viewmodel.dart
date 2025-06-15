@@ -5,7 +5,7 @@ import 'package:temulapak_app/data/network/notification_service.dart';
 import 'package:temulapak_app/model/notification/notification_model.dart';
 import 'package:temulapak_app/model/state/app_state.dart';
 import 'package:temulapak_app/utils/logger.dart';
-import 'package:temulapak_app/view/chat_page/chat_detail_page.dart';
+import 'package:temulapak_app/view/chat_page/chat_detail_view.dart';
 
 part 'notification_viewmodel.g.dart';
 

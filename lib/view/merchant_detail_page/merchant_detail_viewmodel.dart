@@ -10,7 +10,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:temulapak_app/data/location/location_service.dart';
 import 'package:temulapak_app/model/merchant/merchant_model.dart';
 import 'package:temulapak_app/model/state/app_state.dart';
-import 'package:temulapak_app/view/chat_page/chat_detail_page.dart';
+import 'package:temulapak_app/view/chat_page/chat_detail_view.dart';
 import 'package:temulapak_app/view/chat_page/chat_viewmodel.dart';
 import 'package:temulapak_app/assets/mycolor.dart';
 import 'package:temulapak_app/utils/logger.dart';
