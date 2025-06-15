@@ -4,7 +4,7 @@ import 'package:temulapak_app/assets/mycolor.dart';
 import 'package:temulapak_app/utils/custom_dialog.dart';
 import 'package:temulapak_app/utils/loading/loading.dart';
 import 'package:temulapak_app/utils/network_checker.dart';
-import 'package:temulapak_app/view/login_page/login_page.dart';
+import 'package:temulapak_app/view/login_page/login_view.dart';
 import 'package:temulapak_app/view/navigation_page/navigation_viewmodel.dart';
 import 'package:temulapak_app/view/profile_page/profile_viewmodel.dart';
 

@@ -7,7 +7,7 @@ import 'package:temulapak_app/model/merchant/merchant_model.dart';
 import 'package:temulapak_app/model/state/app_state.dart';
 import 'package:temulapak_app/utils/logger.dart';
 import 'package:temulapak_app/utils/network_checker.dart';
-import 'package:temulapak_app/view/edit_merchant_profile_page/edit_merchant_profile_page.dart';
+import 'package:temulapak_app/view/edit_merchant_profile_page/edit_merchant_profile_view.dart';
 
 part 'merchant_dashboard_viewmodel.g.dart';
 
