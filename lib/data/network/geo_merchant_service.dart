@@ -1,6 +1,3 @@
-// File: lib/data/network/geo_merchant_service.dart
-// SAFE IMPLEMENTATION: GeoFlutterFire Plus v0.0.32 compatible
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:geoflutterfire_plus/geoflutterfire_plus.dart';
 import 'package:temulapak_app/model/merchant/merchant_model.dart';

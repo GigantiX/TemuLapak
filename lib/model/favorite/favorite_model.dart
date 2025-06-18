@@ -1,5 +1,3 @@
-// File: lib/model/favorite/favorite_model.dart
-
 class FavoriteModel {
   final String merchantId;
   final DateTime addedAt;

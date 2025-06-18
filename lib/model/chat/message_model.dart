@@ -5,7 +5,6 @@ class MessageModel {
   final DateTime timestamp;
   final String type;
   final List<String> readBy;
-  final bool isEdited;
 
   MessageModel({
     required this.id,
@@ -14,7 +13,6 @@ class MessageModel {
     required this.timestamp,
     this.type = 'text',
     this.readBy = const [],
-    this.isEdited = false,
   });
 
   Map<String, dynamic> toMap() {
@@ -25,7 +23,6 @@ class MessageModel {
       'timestamp': timestamp.toIso8601String(),
       'type': type,
       'readBy': readBy,
-      'isEdited': isEdited,
     };
   }
 
@@ -37,7 +34,6 @@ class MessageModel {
       timestamp: DateTime.parse(map['timestamp'] ?? DateTime.now().toIso8601String()),
       type: map['type'] ?? 'text',
       readBy: List<String>.from(map['readBy'] ?? []),
-      isEdited: map['isEdited'] ?? false,
     );
   }
 
@@ -48,7 +44,6 @@ class MessageModel {
     DateTime? timestamp,
     String? type,
     List<String>? readBy,
-    bool? isEdited,
   }) {
     return MessageModel(
       id: id ?? this.id,
@@ -57,7 +52,6 @@ class MessageModel {
       timestamp: timestamp ?? this.timestamp,
       type: type ?? this.type,
       readBy: readBy ?? this.readBy,
-      isEdited: isEdited ?? this.isEdited,
     );
   }
 

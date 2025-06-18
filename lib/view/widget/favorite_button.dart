@@ -1,6 +1,3 @@
-// File: lib/view/widget/favorite_button.dart
-// FIXED: Remove duplicate class, fix whenOrNull
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:temulapak_app/assets/mycolor.dart';

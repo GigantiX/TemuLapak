@@ -1,6 +1,3 @@
-// File: lib/data/network/favorite_service.dart
-// FIXED: Prevent negative popularity values
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:temulapak_app/data/network/user_service.dart';
 import 'package:temulapak_app/model/favorite/favorite_model.dart';
