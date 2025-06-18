@@ -1,10 +1,8 @@
-// File: lib/view/widget/merchant_widget.dart
-// VERIFIED: Fixed FavoriteButton integration and improved distance handling
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:temulapak_app/assets/mycolor.dart';
 import 'package:temulapak_app/model/merchant/merchant_model.dart';
+import 'package:temulapak_app/utils/custom_dialog.dart';
 import 'package:temulapak_app/view/widget/favorite_button.dart';
 
 class MerchantWidget extends ConsumerWidget {
@@ -298,8 +296,6 @@ class MerchantWidget extends ConsumerWidget {
   }
 }
 
-// VERIFIED: Specialized merchant widget for favorite page remains the same
-// (This will be used later when we create favorite_page.dart)
 class FavoriteMerchantWidget extends ConsumerWidget {
   final MerchantModel merchant;
   final VoidCallback? onTap;
@@ -326,20 +322,19 @@ class FavoriteMerchantWidget extends ConsumerWidget {
         // Show confirmation dialog
         return await showDialog<bool>(
           context: context,
-          builder: (context) => AlertDialog(
-            title: Text('Hapus dari Favorit?'),
-            content: Text('Apakah Anda yakin ingin menghapus ${merchant.merchantName} dari daftar favorit?'),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(false),
-                child: Text('Batal'),
-              ),
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(true),
-                style: TextButton.styleFrom(foregroundColor: Colors.red),
-                child: Text('Hapus'),
-              ),
-            ],
+          builder: (context) => CustomAlertDialog(
+            title: 'Hapus Favorit?',
+            content: 'Apakah Anda yakin ingin menghapus "${merchant.merchantName ?? 'merchant ini'}" dari daftar favorit?',
+            confirmText: 'Hapus',
+            cancelText: 'Batal',
+            icon: Icons.delete_outline,
+            dialogColor: MyColor.red,
+            onConfirm: () {
+              Navigator.of(context).pop(true);
+            },
+            onCancel: () {
+              Navigator.of(context).pop(false);
+            },
           ),
         ) ?? false;
       },

@@ -9,7 +9,7 @@ import 'package:temulapak_app/model/merchant/merchant_model.dart';
 import 'package:temulapak_app/model/state/app_state.dart';
 import 'package:temulapak_app/utils/logger.dart';
 import 'package:temulapak_app/view/home_page/home_viewmodel.dart';
-import 'package:temulapak_app/view/merchant_detail_page/merchant_detail_page.dart';
+import 'package:temulapak_app/view/merchant_detail_page/merchant_detail_view.dart';
 
 part 'list_merchant_viewmodel.g.dart';
 

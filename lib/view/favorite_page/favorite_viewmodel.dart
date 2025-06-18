@@ -12,7 +12,7 @@ import 'package:temulapak_app/model/merchant/merchant_model.dart';
 import 'package:temulapak_app/model/state/app_state.dart';
 import 'package:temulapak_app/utils/logger.dart';
 import 'package:temulapak_app/view/favorite_page/favorite_status_viewmodel.dart';
-import 'package:temulapak_app/view/merchant_detail_page/merchant_detail_page.dart';
+import 'package:temulapak_app/view/merchant_detail_page/merchant_detail_view.dart';
 part 'favorite_viewmodel.g.dart';
 
 @riverpod

@@ -9,10 +9,10 @@ import 'package:temulapak_app/utils/logger.dart';
 import 'package:temulapak_app/view/chat_page/chat_viewmodel.dart';
 import 'package:temulapak_app/view/help_centre_page/help_center_page.dart';
 import 'package:temulapak_app/view/login_page/login_viewmodel.dart';
-import 'package:temulapak_app/view/merchant_dashboard_page/merchant_dashboard_page.dart';
+import 'package:temulapak_app/view/merchant_dashboard_page/merchant_dashboard_view.dart';
 import 'package:temulapak_app/view/faq_page/faq_page.dart';
 import 'package:temulapak_app/view/about_page/about_page.dart';
-import 'package:temulapak_app/view/register_merchant_page/register_merchant_page.dart';
+import 'package:temulapak_app/view/register_merchant_page/register_merchant_view.dart';
 
 final profileViewModelProvider =
     StateNotifierProvider<ProfileViewModel, AppState<UserModel, Exception>>(

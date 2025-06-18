@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:temulapak_app/utils/loading/loading_component.dart';
 import 'package:temulapak_app/utils/logger.dart';
