@@ -1,4 +1,6 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -19,6 +21,49 @@ import 'package:temulapak_app/view/profile_page/profile_view.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
+Future<void> _handleNotificationNavigation(Map<String, String?> payload) async {
+  Logger.log("MAIN - Handling notification navigation with payload: $payload");
+  final conversationId = payload['conversationId'];
+  final currentUserRawId = payload['receiverId'];
+
+  if (conversationId != null && currentUserRawId != null) {
+    try {
+      final conversationDoc = await FirebaseFirestore.instance
+          .collection('conversations')
+          .doc(conversationId)
+          .get();
+
+      if (conversationDoc.exists) {
+        final conversationData = conversationDoc.data();
+        final merchantId = conversationData?['merchantId'] as String?;
+
+        String currentUserPersonaId = currentUserRawId;
+        // Check if the current user is the merchant for this conversation
+        if (merchantId != null && merchantId == "MRCN_$currentUserRawId") {
+            currentUserPersonaId = merchantId;
+            Logger.log("MAIN - User is a merchant, setting persona ID to: $currentUserPersonaId");
+        }
+
+        // Use the navigatorKey to push the route.
+        navigatorKey.currentState?.push(
+          MaterialPageRoute(
+            builder: (context) => ChatDetailPage(
+              conversationId: conversationId,
+              currentUserPersonaId: currentUserPersonaId,
+            ),
+          ),
+        );
+      } else {
+        Logger.error("MAIN - Conversation document not found for ID: $conversationId");
+      }
+    } catch (e) {
+      Logger.error("MAIN - Error fetching conversation details: $e");
+    }
+  } else {
+    Logger.error("MAIN - Notification payload is missing required data.");
+  }
+}
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -32,45 +77,34 @@ void main() async {
     DeviceOrientation.portraitUp,
   ]);
 
+  FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
+    Logger.log("MAIN - onMessageOpenedApp (background tap) triggered.");
+    _handleNotificationNavigation({
+      'conversationId': message.data['conversationId'],
+      'receiverId': message.data['receiverId'],
+    });
+  });
+
+  await _initializeNotifications();
+
+  final RemoteMessage? initialMessage = await FirebaseMessaging.instance.getInitialMessage();
+
+
   runApp(
-    const ProviderScope(
-      child: MyApp(),
+    ProviderScope(
+      child: MyApp(initialMessage: initialMessage,),
     ),
   );
 }
 
 Future<void> _initializeNotifications() async {
   try {
-    Logger.log("MAIN - Initializing notification service");
+    Logger.log("MAIN - Initializing notification service for foreground/local handling");
 
     final notificationService = NotificationService.instance;
 
-    notificationService.onNotificationTap = (payload) {
-      Logger.log("MAIN - Notification tapped, payload: $payload");
-
-      final conversationId = payload['conversationId'];
-      final currentUserPersonaId = payload['receiverId'];
-
-      if (conversationId != null && currentUserPersonaId != null) {
-        Logger.log("MAIN - Navigating to conversation: $conversationId as persona: $currentUserPersonaId");
-        
-        final context = navigatorKey.currentContext;
-        if (context != null) {
-          // Navigate to ChatDetailPage with BOTH required parameters
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => ChatDetailPage(
-                conversationId: conversationId,
-                currentUserPersonaId: currentUserPersonaId,
-              ),
-            ),
-          );
-        }
-      } else {
-        Logger.error("MAIN - Notification payload is missing required data.");
-      }
-    };
+    // Set the single, unified callback function
+    notificationService.onNotificationTap = _handleNotificationNavigation;
 
     await notificationService.initialize();
     await notificationService.prefetchServerUrl();
@@ -82,16 +116,40 @@ Future<void> _initializeNotifications() async {
 }
 
 
-class MyApp extends ConsumerWidget {
-  const MyApp({super.key});
+class MyApp extends ConsumerStatefulWidget {
+  final RemoteMessage? initialMessage;
+  const MyApp({super.key, this.initialMessage});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends ConsumerState<MyApp> {
+
+  @override
+  void initState() {
+    super.initState();
+    // If the app was launched from a terminated state, handle the navigation
+    // after the first frame is built.
+    if (widget.initialMessage != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Logger.log("MAIN - Handling initialMessage (terminated state tap).");
+        _handleNotificationNavigation({
+          'conversationId': widget.initialMessage!.data['conversationId'],
+          'receiverId': widget.initialMessage!.data['receiverId'],
+        });
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final loginState = ref.watch(loginViewModelProvider);
 
     return MerchantLifecycleHandler(
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
+        navigatorKey: navigatorKey,
         title: 'TemuLapak',
         theme: ThemeData(
           primarySwatch: Colors.blue,
