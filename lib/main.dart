@@ -72,7 +72,6 @@ void main() async {
 
   await Firebase.initializeApp();
   await HiveService.instance.init();
-  await _initializeNotifications();
   await SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
   ]);
