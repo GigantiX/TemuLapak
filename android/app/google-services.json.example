@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "1234567890",
+    "firebase_url": "https://your-project-default-rtdb.region.firebasedatabase.app",
+    "project_id": "your-firebase-project-id",
+    "storage_bucket": "your-project.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1234567890:android:replace-me",
+        "android_client_info": {
+          "package_name": "com.example.temulapak_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "your-android-api-key"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -47,7 +47,6 @@ class LoginService {
             message: 'Failed to get user after authentication');
       }
 
-      Logger.log("Token : ${googleAuth.accessToken}");
       Logger.log("UID : ${user.uid}");
       Logger.log("Email : ${user.email}");
       Logger.log("Display Name : ${user.displayName}");

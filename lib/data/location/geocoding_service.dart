@@ -1,14 +1,13 @@
-import '../../utils/logger.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:temulapak_app/config/app_config.dart';
+import '../../utils/logger.dart';
 
 class GeocodingService {
-  final String gate = 'REDACTED_GOOGLE_MAPS_API_KEY';
-
   Future<String> getAddressFromLatLng(double latitude, double longitude) async {
     try {
       final url = Uri.parse(
-          'https://maps.googleapis.com/maps/api/geocode/json?latlng=$latitude,$longitude&key=$gate');
+          'https://maps.googleapis.com/maps/api/geocode/json?latlng=$latitude,$longitude&key=${AppConfig.googleMapsApiKey}');
 
       Logger.log('Requesting address for coordinates: $latitude, $longitude');
 

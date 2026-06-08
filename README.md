@@ -1,68 +1,51 @@
-# 🌍 TemuLapak - Connect with Nearby Street Vendors
+# TemuLapak
 
-**TemuLapak** is a location-based mobile application that helps users discover and connect with nearby street vendors in real-time. Built with **Flutter**, **Dart**, and **Riverpod**, and powered by **Firebase** and **Google Maps API**, TemuLapak brings the street market experience right to your fingertips.
+TemuLapak is a Flutter mobile app for discovering nearby street vendors, chatting with them, and tracking live merchant activity. It uses Firebase for authentication, database, messaging, and storage, plus Google Maps APIs for map and geocoding features.
 
----
+## Local Setup
 
-## 🚀 Key Features
-
-- 🗺️ **Interactive Map**: Find active street vendors near your location via Google Maps.
-- 🔔 **Real-Time Updates**: Instantly see which vendors are online and currently open.
-- 🧭 **Navigation Support**: Get directions to your selected vendor easily.
-- ❤️ **Favorites**: Mark your favorite vendors and get notified when they’re nearby.
-- ⚡ **Smooth Performance**: Powered by Riverpod for efficient and scalable state management.
-
----
-
-## 🛠️ Built With
-
-- **Flutter & Dart** – Cross-platform mobile development
-- **Riverpod** – Robust state management
-- **Firebase** – Real-time database, authentication, and notifications
-- **Google Maps API** – Mapping and geolocation features
-
----
-
-## 🚧 Getting Started
-
-To run this project locally:
-
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/your-username/temulapak.git
-   cd temulapak
-   ```
-
-2. **Install dependencies**
+1. Install dependencies:
    ```bash
    flutter pub get
    ```
 
-3. **Set up Firebase**
-   - Add your `google-services.json` (Android) and/or `GoogleService-Info.plist` (iOS) files to the respective platforms.
+2. Create your local environment file:
+   ```bash
+   cp .env.example .env
+   ```
 
-4. **Run the app**
+3. Fill `.env` with your own Firebase app values and Google Maps API key.
+
+4. Add Android Firebase config:
+   ```bash
+   cp android/app/google-services.json.example android/app/google-services.json
+   ```
+   Replace the example values with your real Firebase Android config.
+
+5. Add iOS Firebase config:
+   ```bash
+   cp ios/Runner/GoogleService-Info.plist.example ios/Runner/GoogleService-Info.plist
+   ```
+   Replace the example values with your real Firebase iOS config.
+
+6. Add your Maps key to `android/local.properties`:
+   ```properties
+   maps.api.key=your-google-maps-api-key
+   ```
+
+7. Run the app:
    ```bash
    flutter run
    ```
 
----
+## Public Repo Notes
 
-## 🤝 Contributing
+- Real keys and Firebase client config files are intentionally not committed.
+- Realtime Database rules in [database.rules.json](database.rules.json) are now auth-only by default.
+- Before publishing a public repo, restrict or rotate any Google Maps and Firebase keys that were previously committed.
 
-Contributions are welcome! If you have ideas for improvement or new features, feel free to open an issue or submit a pull request.
+## Contact
 
----
-
-## 📬 Contact
-
-Developer 
 - axelg.bsns@gmail.com
 - bagasdwiputramajid2003@gmail.com
 - gslaudrey@gmail.com
-
----
-
-## 📄 License
-
-MIT License © 2025 TemuLapak
