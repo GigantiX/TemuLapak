@@ -228,22 +228,19 @@ class AboutPage extends StatelessWidget {
         'name': 'Shavarell Axel Ganendra',
         'email': 'shavarell.ganendra@binus.ac.id',
         'role': 'Lead Mobile Developer',
-        'image':
-            'lib/assets/images/thumbnail.jpeg',
+        'image': 'lib/assets/images/thumbnail.jpeg',
       },
       {
         'name': 'Bagas Dwi Putra Majid',
         'email': 'bagas.dwi@binus.ac.id',
         'role': 'Mobile Developer',
-        'image':
-            'lib/assets/images/thumbnail.jpeg'
+        'image': 'lib/assets/images/thumbnail.jpeg'
       },
       {
         'name': 'Gisela Audrey Limansagita',
         'email': 'gisela.limansagita@binus.ac.id',
         'role': 'Mobile Developer',
-        'image':
-            'lib/assets/images/thumbnail.jpeg',
+        'image': 'lib/assets/images/thumbnail.jpeg',
       },
     ];
 

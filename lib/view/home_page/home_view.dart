@@ -190,15 +190,11 @@ class _HomePageState extends ConsumerState<HomePage> {
         itemBuilder: (context, index, realIndex) {
           return ClipRRect(
             borderRadius: BorderRadius.circular(10),
-            child: Image.network(
+            child: Image.asset(
               imgList[index],
               fit: BoxFit.cover,
               width: 280,
               height: 160,
-              loadingBuilder: (context, child, loadingProgress) {
-                if (loadingProgress == null) return child;
-                return _buildShimmer();
-              },
               errorBuilder: (context, error, stackTrace) {
                 return Image.asset(
                   "lib/assets/images/thumbnail.jpeg",
